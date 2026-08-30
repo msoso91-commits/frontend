@@ -1,4 +1,4 @@
-# Frontend — Analyseur de page arabe
+# Frontend — Mufradat
 
 ## Installation en local
 ```bash
