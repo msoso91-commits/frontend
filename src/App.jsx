@@ -81,7 +81,8 @@ function AuthScreen({ onAuthenticated }) {
 
   return (
     <div style={{ maxWidth: 380, margin: "10vh auto", padding: "0 1rem" }}>
-      <div style={{ fontFamily: "Amiri, serif", fontSize: "2.2rem", color: COLORS.teal, textAlign: "center" }} dir="rtl">
+      <img src="/logo.svg" alt="" width={56} height={56} style={{ display: "block", margin: "0 auto" }} />
+      <div style={{ fontFamily: "Amiri, serif", fontSize: "2.2rem", color: COLORS.teal, textAlign: "center", marginTop: "0.5rem" }} dir="rtl">
         صَفْحَة
       </div>
       <h1 style={{ fontFamily: "Fraunces, serif", textAlign: "center", fontSize: "1.4rem", marginTop: "0.5rem" }}>
@@ -268,8 +269,11 @@ function MainApp({ token, user, onLogout }) {
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
         <div>
-          <div style={{ fontFamily: "Amiri, serif", fontSize: "clamp(1.6rem, 6vw, 2.2rem)", color: COLORS.teal, lineHeight: 1 }} dir="rtl">
-            صَفْحَة
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <img src="/logo.svg" alt="" width={32} height={32} />
+            <div style={{ fontFamily: "Amiri, serif", fontSize: "clamp(1.6rem, 6vw, 2.2rem)", color: COLORS.teal, lineHeight: 1 }} dir="rtl">
+              صَفْحَة
+            </div>
           </div>
           <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "clamp(1.2rem, 4vw, 1.6rem)", margin: "0.4rem 0 0" }}>Analyseur de page arabe</h1>
           <p style={{ color: COLORS.muted, fontSize: "0.85rem", margin: "0.2rem 0 0" }}>{user.email}</p>
