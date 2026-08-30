@@ -185,13 +185,40 @@ function MainApp({ token, user, onLogout }) {
   const [result, setResult] = useState(null);
   const [pages, setPages] = useState([]);
   const [view, setView] = useState("analyze");
+  const [subscriptionStatus, setSubscriptionStatus] = useState("free");
+  const [upgrading, setUpgrading] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
     apiFetch("/api/pages", { token })
       .then((data) => setPages(data.pages))
       .catch(() => {});
+    apiFetch("/api/billing/status", { token })
+      .then((data) => setSubscriptionStatus(data.status))
+      .catch(() => {});
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("subscription") === "success") {
+      // Laisse un court instant au webhook Stripe pour mettre à jour la base avant de rafraîchir.
+      setTimeout(() => {
+        apiFetch("/api/billing/status", { token })
+          .then((data) => setSubscriptionStatus(data.status))
+          .catch(() => {});
+      }, 2000);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }, [token]);
+
+  async function startUpgrade() {
+    setUpgrading(true);
+    try {
+      const data = await apiFetch("/api/billing/create-checkout-session", { token, method: "POST" });
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err.message);
+      setUpgrading(false);
+    }
+  }
 
   function handleFile(e) {
     const file = e.target.files?.[0];
@@ -246,6 +273,19 @@ function MainApp({ token, user, onLogout }) {
           </div>
           <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "clamp(1.2rem, 4vw, 1.6rem)", margin: "0.4rem 0 0" }}>Analyseur de page arabe</h1>
           <p style={{ color: COLORS.muted, fontSize: "0.85rem", margin: "0.2rem 0 0" }}>{user.email}</p>
+          {subscriptionStatus === "active" ? (
+            <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", padding: "0.2rem 0.5rem", borderRadius: 999, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}>
+              ✨ Abonné — analyses illimitées
+            </span>
+          ) : (
+            <button
+              onClick={startUpgrade}
+              disabled={upgrading}
+              style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", padding: "0.3rem 0.6rem", borderRadius: 999, background: COLORS.gold, color: COLORS.paper, fontWeight: 600 }}
+            >
+              {upgrading ? "Redirection…" : "✨ Passer à l'illimité — 4,99€/mois"}
+            </button>
+          )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-end" }}>
           <button
