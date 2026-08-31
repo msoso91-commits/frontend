@@ -29,4 +29,5 @@ button {
 
 input {
   font-family: inherit;
+  font-size: 16px; /* empêche Safari iOS de zoomer automatiquement au focus d'un champ */
 }

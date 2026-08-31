@@ -318,6 +318,17 @@ function MainApp({ token, user, onLogout }) {
     }
   }
 
+  async function openBillingPortal() {
+    setUpgrading(true);
+    try {
+      const data = await apiFetch("/api/billing/create-portal-session", { token, method: "POST" });
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err.message);
+      setUpgrading(false);
+    }
+  }
+
   function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -375,9 +386,13 @@ function MainApp({ token, user, onLogout }) {
           <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "clamp(1.2rem, 4vw, 1.6rem)", margin: "0.4rem 0 0" }}>Mufradat</h1>
           <p style={{ color: COLORS.muted, fontSize: "0.85rem", margin: "0.2rem 0 0" }}>{user.email}</p>
           {subscriptionStatus === "active" ? (
-            <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", padding: "0.2rem 0.5rem", borderRadius: 999, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}>
-              ✨ Abonné — analyses illimitées
-            </span>
+            <button
+              onClick={openBillingPortal}
+              disabled={upgrading}
+              style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", padding: "0.2rem 0.5rem", borderRadius: 999, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}
+            >
+              {upgrading ? "Redirection…" : "✨ Abonné — gérer / résilier"}
+            </button>
           ) : (
             <button
               onClick={startUpgrade}
@@ -511,18 +526,43 @@ function MainApp({ token, user, onLogout }) {
 export default function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem("token");
+    if (!savedToken) {
+      setCheckingSession(false);
+      return;
+    }
+    apiFetch("/api/auth/me", { token: savedToken })
+      .then((data) => {
+        setToken(savedToken);
+        setUser(data.user);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+      })
+      .finally(() => setCheckingSession(false));
+  }, []);
 
   function handleAuthenticated(t, u) {
+    localStorage.setItem("token", t);
     setToken(t);
     setUser(u);
-    // Pour une vraie mise en production (hors artifact Claude), tu peux
-    // persister la session avec : localStorage.setItem("token", t)
-    // et la relire au chargement, pour éviter de se reconnecter à chaque visite.
   }
 
   function handleLogout() {
+    localStorage.removeItem("token");
     setToken(null);
     setUser(null);
+  }
+
+  if (checkingSession) {
+    return (
+      <div style={{ minHeight: "100vh", background: COLORS.paper, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Spinner />
+      </div>
+    );
   }
 
   return (
