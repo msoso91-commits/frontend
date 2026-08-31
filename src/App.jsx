@@ -526,18 +526,43 @@ function MainApp({ token, user, onLogout }) {
 export default function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem("token");
+    if (!savedToken) {
+      setCheckingSession(false);
+      return;
+    }
+    apiFetch("/api/auth/me", { token: savedToken })
+      .then((data) => {
+        setToken(savedToken);
+        setUser(data.user);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+      })
+      .finally(() => setCheckingSession(false));
+  }, []);
 
   function handleAuthenticated(t, u) {
+    localStorage.setItem("token", t);
     setToken(t);
     setUser(u);
-    // Pour une vraie mise en production (hors artifact Claude), tu peux
-    // persister la session avec : localStorage.setItem("token", t)
-    // et la relire au chargement, pour éviter de se reconnecter à chaque visite.
   }
 
   function handleLogout() {
+    localStorage.removeItem("token");
     setToken(null);
     setUser(null);
+  }
+
+  if (checkingSession) {
+    return (
+      <div style={{ minHeight: "100vh", background: COLORS.paper, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Spinner />
+      </div>
+    );
   }
 
   return (
