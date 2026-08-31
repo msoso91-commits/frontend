@@ -318,6 +318,17 @@ function MainApp({ token, user, onLogout }) {
     }
   }
 
+  async function openBillingPortal() {
+    setUpgrading(true);
+    try {
+      const data = await apiFetch("/api/billing/create-portal-session", { token, method: "POST" });
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err.message);
+      setUpgrading(false);
+    }
+  }
+
   function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -375,9 +386,13 @@ function MainApp({ token, user, onLogout }) {
           <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "clamp(1.2rem, 4vw, 1.6rem)", margin: "0.4rem 0 0" }}>Mufradat</h1>
           <p style={{ color: COLORS.muted, fontSize: "0.85rem", margin: "0.2rem 0 0" }}>{user.email}</p>
           {subscriptionStatus === "active" ? (
-            <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", padding: "0.2rem 0.5rem", borderRadius: 999, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}>
-              ✨ Abonné — analyses illimitées
-            </span>
+            <button
+              onClick={openBillingPortal}
+              disabled={upgrading}
+              style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", padding: "0.2rem 0.5rem", borderRadius: 999, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}
+            >
+              {upgrading ? "Redirection…" : "✨ Abonné — gérer / résilier"}
+            </button>
           ) : (
             <button
               onClick={startUpgrade}
