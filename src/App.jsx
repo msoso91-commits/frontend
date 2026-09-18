@@ -36,7 +36,7 @@ function Spinner() {
 }
 
 // Emplacement publicitaire : remplace le contenu par ton bloc <ins class="adsbygoogle">
-// une fois ton compte Google AdSense approuvé. Voir index.html pour le script à ajouter.
+// une fois ton compte Google AdSense approuvé.
 function AdSlot({ label }) {
   return (
     <div
@@ -235,6 +235,8 @@ function AuthScreen({ onAuthenticated }) {
   );
 }
 
+// Tableau des verbes / noms — mot arabe + traduction resserrée sous lui,
+// lignes bien séparées visuellement (bandes alternées + bordure plus marquée).
 function WordTable({ rows, columns }) {
   if (!rows || rows.length === 0) return null;
   return (
@@ -243,7 +245,7 @@ function WordTable({ rows, columns }) {
         <thead>
           <tr style={{ background: COLORS.paperDark }}>
             {columns.map((c) => (
-              <th key={c.key} style={{ textAlign: "left", padding: "0.5rem 0.75rem", color: COLORS.muted, whiteSpace: "nowrap" }}>
+              <th key={c.key} style={{ textAlign: "left", padding: "0.5rem 0.75rem", color: COLORS.muted, whiteSpace: "nowrap", borderBottom: `1px solid ${COLORS.gold}` }}>
                 {c.label}
               </th>
             ))}
@@ -251,20 +253,20 @@ function WordTable({ rows, columns }) {
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} style={{ borderTop: `1px solid ${COLORS.paperDark}` }}>
+            <tr key={i} style={{ background: i % 2 === 1 ? "rgba(255,255,255,0.025)" : "transparent", borderTop: `1px solid ${COLORS.paperDark}` }}>
               {columns.map((c, ci) => (
-                <td key={c.key} dir="rtl" style={{ padding: "0.5rem 0.75rem", verticalAlign: "top" }}>
+                <td key={c.key} style={{ padding: "0.6rem 0.75rem", verticalAlign: "middle" }} dir="rtl">
                   {ci === 0 ? (
-                    <>
-                      <div style={{ fontFamily: "Amiri, serif", fontSize: "1.1rem" }}>{row[c.key]}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                      <span style={{ fontFamily: "Amiri, serif", fontSize: "1.15rem", lineHeight: 1.2 }}>{row[c.key]}</span>
                       {row.traduction && (
-                        <div dir="ltr" style={{ fontFamily: "Inter, sans-serif", fontSize: "0.68rem", color: COLORS.muted, marginTop: 2 }}>
+                        <span dir="ltr" style={{ fontFamily: "Inter, sans-serif", fontSize: "0.68rem", color: COLORS.muted, lineHeight: 1.2 }}>
                           {row.traduction}
-                        </div>
+                        </span>
                       )}
-                    </>
+                    </div>
                   ) : (
-                    <span style={{ fontFamily: "Amiri, serif" }}>{row[c.key] || "—"}</span>
+                    <span style={{ fontFamily: "Amiri, serif", lineHeight: 1.2 }}>{row[c.key] || "—"}</span>
                   )}
                 </td>
               ))}
@@ -291,13 +293,13 @@ function MainApp({ token, user, onLogout }) {
     apiFetch("/api/pages", { token })
       .then((data) => setPages(data.pages))
       .catch(() => {});
+
     apiFetch("/api/billing/status", { token })
       .then((data) => setSubscriptionStatus(data.status))
       .catch(() => {});
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("subscription") === "success") {
-      // Laisse un court instant au webhook Stripe pour mettre à jour la base avant de rafraîchir.
       setTimeout(() => {
         apiFetch("/api/billing/status", { token })
           .then((data) => setSubscriptionStatus(data.status))
