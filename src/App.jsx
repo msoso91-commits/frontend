@@ -287,6 +287,8 @@ function MainApp({ token, user, onLogout }) {
   const [view, setView] = useState("analyze");
   const [subscriptionStatus, setSubscriptionStatus] = useState("free");
   const [upgrading, setUpgrading] = useState(false);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -375,6 +377,22 @@ function MainApp({ token, user, onLogout }) {
     } catch {}
   }
 
+  function startRenaming(p) {
+    setRenamingId(p.id);
+    setRenameValue(p.titre || "");
+  }
+
+  async function saveRename(id) {
+    const titre = renameValue.trim();
+    setPages((prev) => prev.map((p) => (p.id === id ? { ...p, titre } : p)));
+    setRenamingId(null);
+    try {
+      await apiFetch(`/api/pages/${id}`, { token, method: "PATCH", body: JSON.stringify({ titre }) });
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
@@ -424,19 +442,41 @@ function MainApp({ token, user, onLogout }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {pages.length === 0 && <p style={{ color: COLORS.muted, fontSize: "0.9rem" }}>Aucune page enregistrée pour l'instant.</p>}
           {pages.map((p) => (
-            <div key={p.id} style={{ borderRadius: 8, padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
-              <button
-                onClick={() => {
-                  setResult(p);
-                  setView("analyze");
-                }}
-                style={{ background: "none", color: COLORS.ink, textAlign: "left", flex: 1 }}
-              >
-                <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-                  {p.verbes.length} verbe{p.verbes.length !== 1 ? "s" : ""} · {p.noms.length} nom{p.noms.length !== 1 ? "s" : ""}
+            <div key={p.id} style={{ borderRadius: 8, padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
+              {renamingId === p.id ? (
+                <div style={{ display: "flex", flex: 1, gap: "0.5rem", alignItems: "center" }}>
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveRename(p.id)}
+                    placeholder="Nom de la page"
+                    maxLength={100}
+                    style={{ flex: 1, padding: "0.4rem 0.6rem", borderRadius: 6, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+                  />
+                  <button onClick={() => saveRename(p.id)} style={{ background: "none", color: COLORS.teal, fontSize: "0.8rem", fontWeight: 600 }}>
+                    OK
+                  </button>
                 </div>
-                <div style={{ fontSize: "0.75rem", color: COLORS.muted }}>{new Date(p.created_at).toLocaleDateString("fr-FR")}</div>
-              </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setResult(p);
+                    setView("analyze");
+                  }}
+                  style={{ background: "none", color: COLORS.ink, textAlign: "left", flex: 1 }}
+                >
+                  <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                    {p.titre || `${p.verbes.length} verbe${p.verbes.length !== 1 ? "s" : ""} · ${p.noms.length} nom${p.noms.length !== 1 ? "s" : ""}`}
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: COLORS.muted }}>{new Date(p.created_at).toLocaleDateString("fr-FR")}</div>
+                </button>
+              )}
+              {renamingId !== p.id && (
+                <button onClick={() => startRenaming(p)} style={{ background: "none", color: COLORS.gold, fontSize: "0.8rem" }} title="Renommer">
+                  ✏️
+                </button>
+              )}
               <button onClick={() => deletePage(p.id)} style={{ background: "none", color: COLORS.danger, fontSize: "0.75rem" }}>
                 Supprimer
               </button>
