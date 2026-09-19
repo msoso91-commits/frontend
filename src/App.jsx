@@ -224,6 +224,7 @@ function AuthScreen({ onAuthenticated }) {
       >
         📲 Comment installer l'app sur mon téléphone ?
       </button>
+      <AdSlot label="bannière connexion" />
       <footer style={{ marginTop: "2.5rem", textAlign: "center", fontSize: "0.75rem", color: COLORS.muted, display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
         <a href="/about.html" style={{ color: COLORS.muted }}>À propos</a>
         <a href="/confidentialite.html" style={{ color: COLORS.muted }}>Confidentialité</a>
@@ -490,10 +491,10 @@ function MainApp({ token, user, onLogout }) {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-end" }}>
           <button
-            onClick={() => setView(view === "history" ? "analyze" : "history")}
+            onClick={() => setView(view === "analyze" ? "history" : "analyze")}
             style={{ padding: "0.5rem 0.75rem", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: `1px solid ${COLORS.gold}`, color: COLORS.ink, fontSize: "0.8rem" }}
           >
-            📚 {view === "history" ? "Retour" : `Mes pages (${pages.length})`}
+            📚 {view === "analyze" ? `Mes pages (${pages.length})` : "Retour"}
           </button>
           <button onClick={onLogout} style={{ background: "none", color: COLORS.muted, fontSize: "0.75rem" }}>
             Déconnexion
@@ -527,7 +528,7 @@ function MainApp({ token, user, onLogout }) {
                 <button
                   onClick={() => {
                     setResult(p);
-                    setView("analyze");
+                    setView("page");
                   }}
                   style={{ background: "none", color: COLORS.ink, textAlign: "left", flex: 1 }}
                 >
@@ -547,6 +548,54 @@ function MainApp({ token, user, onLogout }) {
               </button>
             </div>
           ))}
+          {pages.length > 0 && <AdSlot label="bannière basse (historique)" />}
+        </div>
+      ) : view === "page" ? (
+        <div>
+          <button
+            onClick={() => setView("history")}
+            style={{ background: "none", color: COLORS.gold, fontSize: "0.85rem", marginBottom: "1.25rem" }}
+          >
+            ← Retour à mes pages
+          </button>
+          {result?.titre && (
+            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.3rem", marginBottom: "1rem" }}>{result.titre}</h2>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            {result?.verbes?.length > 0 && (
+              <section>
+                <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Verbes</h2>
+                <WordTable
+                  rows={result.verbes}
+                  columns={[
+                    { key: "mot", label: "Mot" },
+                    { key: "passe", label: "Passé" },
+                    { key: "present", label: "Présent" },
+                    { key: "imperatif", label: "Impératif" },
+                    { key: "masdar", label: "Masdar" },
+                  ]}
+                />
+              </section>
+            )}
+            {result?.noms?.length > 0 && (
+              <section>
+                <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Noms</h2>
+                <WordTable
+                  rows={result.noms}
+                  columns={[
+                    { key: "mot", label: "Mot" },
+                    { key: "synonyme", label: "Synonyme" },
+                    { key: "contraire", label: "Contraire" },
+                    { key: "pluriel", label: "Pluriel" },
+                  ]}
+                />
+              </section>
+            )}
+          </div>
+          <AdSlot label="bannière basse (page)" />
+          <p style={{ marginTop: "2rem", fontSize: "0.75rem", color: COLORS.muted, textAlign: "center" }}>
+            Les formes marquées « — » ou « ? » signalent une incertitude plutôt qu'une réponse inventée.
+          </p>
         </div>
       ) : (
         <>
