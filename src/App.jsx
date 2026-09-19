@@ -394,8 +394,16 @@ function AuthScreen({ onAuthenticated }) {
 
 // Tableau des verbes / noms — mot arabe + traduction resserrée sous lui,
 // lignes bien séparées visuellement (bandes alternées + bordure plus marquée).
-function WordTable({ rows, columns }) {
+function WordTable({ rows, columns, onReport }) {
+  const [reportedRows, setReportedRows] = useState({});
+
   if (!rows || rows.length === 0) return null;
+
+  function handleReport(row, i) {
+    setReportedRows((prev) => ({ ...prev, [i]: true }));
+    onReport?.(row);
+  }
+
   return (
     <div style={{ overflowX: "auto", borderRadius: 8, border: `1px solid ${COLORS.gold}`, background: "rgba(255,255,255,0.03)" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480, fontSize: "0.85rem" }}>
@@ -406,6 +414,7 @@ function WordTable({ rows, columns }) {
                 {c.label}
               </th>
             ))}
+            {onReport && <th style={{ borderBottom: `1px solid ${COLORS.gold}` }}></th>}
           </tr>
         </thead>
         <tbody>
@@ -427,6 +436,18 @@ function WordTable({ rows, columns }) {
                   )}
                 </td>
               ))}
+              {onReport && (
+                <td style={{ padding: "0.6rem 0.5rem", textAlign: "center" }}>
+                  <button
+                    onClick={() => handleReport(row, i)}
+                    disabled={reportedRows[i]}
+                    title="Signaler une erreur sur cette ligne"
+                    style={{ background: "none", color: reportedRows[i] ? COLORS.teal : COLORS.muted, fontSize: "0.7rem" }}
+                  >
+                    {reportedRows[i] ? "✓" : "⚑"}
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -450,6 +471,8 @@ function MainApp({ token, user, onLogout }) {
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshingPull, setRefreshingPull] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -616,6 +639,26 @@ function MainApp({ token, user, onLogout }) {
     }
   }
 
+  function reportError(wordType, row) {
+    apiFetch("/api/pages/report-error", {
+      token,
+      method: "POST",
+      body: JSON.stringify({ wordType, row }),
+    }).catch(() => {});
+  }
+
+  async function deleteAccount() {
+    setDeletingAccount(true);
+    try {
+      await apiFetch("/api/auth/account", { token, method: "DELETE" });
+      onLogout();
+    } catch (err) {
+      setError(err.message);
+      setDeletingAccount(false);
+      setShowDeleteConfirm(false);
+    }
+  }
+
   return (
     <div
       onTouchStart={handleTouchStart}
@@ -702,6 +745,7 @@ function MainApp({ token, user, onLogout }) {
                   <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Verbes</h2>
                   <WordTable
                     rows={freshResult.verbes}
+                    onReport={(row) => reportError("verbe", row)}
                     columns={[
                       { key: "mot", label: "Mot" },
                       { key: "passe", label: "Passé" },
@@ -717,6 +761,7 @@ function MainApp({ token, user, onLogout }) {
                   <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Noms</h2>
                   <WordTable
                     rows={freshResult.noms}
+                    onReport={(row) => reportError("nom", row)}
                     columns={[
                       { key: "mot", label: "Mot" },
                       { key: "synonyme", label: "Synonyme" },
@@ -802,6 +847,7 @@ function MainApp({ token, user, onLogout }) {
                 <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Verbes</h2>
                 <WordTable
                   rows={viewingPage.verbes}
+                  onReport={(row) => reportError("verbe", row)}
                   columns={[
                     { key: "mot", label: "Mot" },
                     { key: "passe", label: "Passé" },
@@ -817,6 +863,7 @@ function MainApp({ token, user, onLogout }) {
                 <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Noms</h2>
                 <WordTable
                   rows={viewingPage.noms}
+                  onReport={(row) => reportError("nom", row)}
                   columns={[
                     { key: "mot", label: "Mot" },
                     { key: "synonyme", label: "Synonyme" },
@@ -925,6 +972,10 @@ function MainApp({ token, user, onLogout }) {
             Déconnexion
           </button>
 
+          <button onClick={() => setShowDeleteConfirm(true)} style={{ padding: "0.6rem", background: "none", color: COLORS.muted, fontSize: "0.75rem", textDecoration: "underline" }}>
+            Supprimer définitivement mon compte
+          </button>
+
           <AdSlot label="bannière profil" />
 
           <footer style={{ marginTop: "1rem", textAlign: "center", fontSize: "0.75rem", color: COLORS.muted, display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
@@ -1004,6 +1055,39 @@ function MainApp({ token, user, onLogout }) {
                 style={{ padding: "0.6rem 1.1rem", borderRadius: 8, background: COLORS.danger, color: COLORS.ink, fontWeight: 600, fontSize: "0.85rem" }}
               >
                 Se déconnecter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div
+          onClick={() => !deletingAccount && setShowDeleteConfirm(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60, padding: "1rem" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: COLORS.paper, border: `1px solid ${COLORS.danger}`, borderRadius: 12, padding: "1.5rem", maxWidth: 320, width: "100%", textAlign: "center" }}
+          >
+            <p style={{ fontSize: "0.95rem", marginBottom: "0.5rem", fontWeight: 600 }}>Supprimer définitivement ton compte ?</p>
+            <p style={{ fontSize: "0.8rem", color: COLORS.muted, marginBottom: "1.25rem" }}>
+              Toutes tes pages analysées seront perdues et ton abonnement, s'il y en a un, sera résilié. Cette action est irréversible.
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deletingAccount}
+                style={{ padding: "0.6rem 1.1rem", borderRadius: 8, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={deleteAccount}
+                disabled={deletingAccount}
+                style={{ padding: "0.6rem 1.1rem", borderRadius: 8, background: COLORS.danger, color: COLORS.ink, fontWeight: 600, fontSize: "0.85rem" }}
+              >
+                {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
               </button>
             </div>
           </div>
