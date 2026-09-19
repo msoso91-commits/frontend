@@ -291,7 +291,7 @@ function MainApp({ token, user, onLogout }) {
   const [renameValue, setRenameValue] = useState("");
   const fileRef = useRef(null);
 
-  useEffect(() => {
+  function refreshData() {
     apiFetch("/api/pages", { token })
       .then((data) => setPages(data.pages))
       .catch(() => {});
@@ -299,16 +299,29 @@ function MainApp({ token, user, onLogout }) {
     apiFetch("/api/billing/status", { token })
       .then((data) => setSubscriptionStatus(data.status))
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    refreshData();
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("subscription") === "success") {
-      setTimeout(() => {
-        apiFetch("/api/billing/status", { token })
-          .then((data) => setSubscriptionStatus(data.status))
-          .catch(() => {});
-      }, 2000);
+      setTimeout(refreshData, 2000);
       window.history.replaceState({}, "", window.location.pathname);
     }
+
+    // Rafraîchit dès qu'on revient sur l'app (changement d'onglet, retour au premier plan),
+    // sans intervalle automatique en continu.
+    function handleVisibility() {
+      if (document.visibilityState === "visible") refreshData();
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", refreshData);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", refreshData);
+    };
   }, [token]);
 
   async function startUpgrade() {
