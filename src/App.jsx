@@ -55,6 +55,36 @@ function AdSlot({ label }) {
   );
 }
 
+// Icônes de la barre d'onglets — traits fins, cohérentes avec le style du logo (pas d'emoji).
+function HomeIcon({ color }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M4 11.5 12 4l8 7.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 10.5V19a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-8.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 20v-5h4v5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BookIcon({ color }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M12 6.5c-1.6-1.2-3.6-1.5-6-1.5v13c2.4 0 4.4.3 6 1.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 6.5c1.6-1.2 3.6-1.5 6-1.5v13c-2.4 0-4.4.3-6 1.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 6.5V19.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ color }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="3.4" stroke={color} strokeWidth="1.8" />
+      <path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function InstallGuide({ onClose }) {
   const [step, setStep] = useState(0);
   const steps = [
@@ -283,7 +313,8 @@ function MainApp({ token, user, onLogout }) {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [result, setResult] = useState(null);
+  const [freshResult, setFreshResult] = useState(null);
+  const [viewingPage, setViewingPage] = useState(null);
   const [pages, setPages] = useState([]);
   const [view, setView] = useState("home");
   const [subscriptionStatus, setSubscriptionStatus] = useState("free");
@@ -376,7 +407,7 @@ function MainApp({ token, user, onLogout }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
-    setResult(null);
+    setFreshResult(null);
     const reader = new FileReader();
     reader.onload = () => setImage({ data: reader.result, mediaType: file.type });
     reader.readAsDataURL(file);
@@ -384,7 +415,7 @@ function MainApp({ token, user, onLogout }) {
 
   function reset() {
     setImage(null);
-    setResult(null);
+    setFreshResult(null);
     setError(null);
     if (fileRef.current) fileRef.current.value = "";
   }
@@ -400,7 +431,7 @@ function MainApp({ token, user, onLogout }) {
         method: "POST",
         body: JSON.stringify({ imageBase64: base64, mediaType: image.mediaType }),
       });
-      setResult(data.page);
+      setFreshResult(data.page);
       setPages((prev) => [data.page, ...prev]);
     } catch (err) {
       setError(err.message);
@@ -511,13 +542,13 @@ function MainApp({ token, user, onLogout }) {
             {error && <p style={{ color: COLORS.danger, fontSize: "0.85rem", marginTop: "0.75rem" }}>{error}</p>}
           </div>
 
-          {result && (
+          {freshResult && (
             <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-              {result.verbes?.length > 0 && (
+              {freshResult.verbes?.length > 0 && (
                 <section>
                   <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Verbes</h2>
                   <WordTable
-                    rows={result.verbes}
+                    rows={freshResult.verbes}
                     columns={[
                       { key: "mot", label: "Mot" },
                       { key: "passe", label: "Passé" },
@@ -528,11 +559,11 @@ function MainApp({ token, user, onLogout }) {
                   />
                 </section>
               )}
-              {result.noms?.length > 0 && (
+              {freshResult.noms?.length > 0 && (
                 <section>
                   <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Noms</h2>
                   <WordTable
-                    rows={result.noms}
+                    rows={freshResult.noms}
                     columns={[
                       { key: "mot", label: "Mot" },
                       { key: "synonyme", label: "Synonyme" },
@@ -576,7 +607,7 @@ function MainApp({ token, user, onLogout }) {
               ) : (
                 <button
                   onClick={() => {
-                    setResult(p);
+                    setViewingPage(p);
                     setView("page");
                   }}
                   style={{ background: "none", color: COLORS.ink, textAlign: "left", flex: 1 }}
@@ -609,15 +640,15 @@ function MainApp({ token, user, onLogout }) {
           >
             ← Retour à mes pages
           </button>
-          {result?.titre && (
-            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.3rem", marginBottom: "1rem" }}>{result.titre}</h2>
+          {viewingPage?.titre && (
+            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.3rem", marginBottom: "1rem" }}>{viewingPage.titre}</h2>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-            {result?.verbes?.length > 0 && (
+            {viewingPage?.verbes?.length > 0 && (
               <section>
                 <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Verbes</h2>
                 <WordTable
-                  rows={result.verbes}
+                  rows={viewingPage.verbes}
                   columns={[
                     { key: "mot", label: "Mot" },
                     { key: "passe", label: "Passé" },
@@ -628,11 +659,11 @@ function MainApp({ token, user, onLogout }) {
                 />
               </section>
             )}
-            {result?.noms?.length > 0 && (
+            {viewingPage?.noms?.length > 0 && (
               <section>
                 <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Noms</h2>
                 <WordTable
-                  rows={result.noms}
+                  rows={viewingPage.noms}
                   columns={[
                     { key: "mot", label: "Mot" },
                     { key: "synonyme", label: "Synonyme" },
@@ -714,9 +745,9 @@ function MainApp({ token, user, onLogout }) {
         }}
       >
         {[
-          { key: "home", icon: "🏠", label: "Accueil" },
-          { key: "history", icon: "📚", label: "Mes pages" },
-          { key: "profile", icon: "👤", label: "Profil" },
+          { key: "home", Icon: HomeIcon, label: "Accueil" },
+          { key: "history", Icon: BookIcon, label: "Mes pages" },
+          { key: "profile", Icon: ProfileIcon, label: "Profil" },
         ].map((tab) => {
           const active = view === tab.key || (tab.key === "history" && view === "page");
           return (
@@ -728,14 +759,14 @@ function MainApp({ token, user, onLogout }) {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: "2px",
+                gap: "3px",
                 color: active ? COLORS.teal : COLORS.muted,
                 fontSize: "0.7rem",
                 fontWeight: active ? 600 : 400,
                 padding: "0.25rem 0.75rem",
               }}
             >
-              <span style={{ fontSize: "1.2rem" }}>{tab.icon}</span>
+              <tab.Icon color={active ? COLORS.teal : COLORS.muted} />
               {tab.label}
             </button>
           );
