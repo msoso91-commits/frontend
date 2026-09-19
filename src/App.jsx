@@ -285,7 +285,7 @@ function MainApp({ token, user, onLogout }) {
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [pages, setPages] = useState([]);
-  const [view, setView] = useState("analyze");
+  const [view, setView] = useState("home");
   const [subscriptionStatus, setSubscriptionStatus] = useState("free");
   const [upgrading, setUpgrading] = useState(false);
   const [renamingId, setRenamingId] = useState(null);
@@ -437,7 +437,7 @@ function MainApp({ token, user, onLogout }) {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem", position: "relative" }}
+      style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem 5.5rem", position: "relative", minHeight: "100vh" }}
     >
       <div
         style={{
@@ -461,143 +461,20 @@ function MainApp({ token, user, onLogout }) {
           }}
         />
       </div>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
+
+      <header style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
+        <img src="/logo.svg" alt="" width={32} height={32} />
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <img src="/logo.svg" alt="" width={32} height={32} />
-            <div style={{ fontFamily: "Amiri, serif", fontSize: "clamp(1.6rem, 6vw, 2.2rem)", color: COLORS.teal, lineHeight: 1 }} dir="rtl">
-              مُفْرَدَات
-            </div>
+          <div style={{ fontFamily: "Amiri, serif", fontSize: "1.3rem", color: COLORS.teal, lineHeight: 1 }} dir="rtl">
+            مُفْرَدَات
           </div>
-          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "clamp(1.2rem, 4vw, 1.6rem)", margin: "0.4rem 0 0" }}>Mufradat</h1>
-          <p style={{ color: COLORS.muted, fontSize: "0.85rem", margin: "0.2rem 0 0" }}>{user.email}</p>
-          {subscriptionStatus === "active" ? (
-            <button
-              onClick={openBillingPortal}
-              disabled={upgrading}
-              style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", padding: "0.2rem 0.5rem", borderRadius: 999, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}
-            >
-              {upgrading ? "Redirection…" : "✨ Abonné — gérer / résilier"}
-            </button>
-          ) : (
-            <button
-              onClick={startUpgrade}
-              disabled={upgrading}
-              style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", padding: "0.3rem 0.6rem", borderRadius: 999, background: COLORS.gold, color: COLORS.paper, fontWeight: 600 }}
-            >
-              {upgrading ? "Redirection…" : "✨ Passer à l'illimité — 4,99€/mois"}
-            </button>
-          )}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-end" }}>
-          <button
-            onClick={() => setView(view === "analyze" ? "history" : "analyze")}
-            style={{ padding: "0.5rem 0.75rem", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: `1px solid ${COLORS.gold}`, color: COLORS.ink, fontSize: "0.8rem" }}
-          >
-            📚 {view === "analyze" ? `Mes pages (${pages.length})` : "Retour"}
-          </button>
-          <button onClick={onLogout} style={{ background: "none", color: COLORS.muted, fontSize: "0.75rem" }}>
-            Déconnexion
-          </button>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "1rem", margin: "0.2rem 0 0", color: COLORS.muted }}>Mufradat</h1>
         </div>
       </header>
 
       <AdSlot label="bannière haute" />
 
-      {view === "history" ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {pages.length === 0 && <p style={{ color: COLORS.muted, fontSize: "0.9rem" }}>Aucune page enregistrée pour l'instant.</p>}
-          {pages.map((p) => (
-            <div key={p.id} style={{ borderRadius: 8, padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
-              {renamingId === p.id ? (
-                <div style={{ display: "flex", flex: 1, gap: "0.5rem", alignItems: "center" }}>
-                  <input
-                    autoFocus
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && saveRename(p.id)}
-                    placeholder="Nom de la page"
-                    maxLength={100}
-                    style={{ flex: 1, padding: "0.4rem 0.6rem", borderRadius: 6, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
-                  />
-                  <button onClick={() => saveRename(p.id)} style={{ background: "none", color: COLORS.teal, fontSize: "0.8rem", fontWeight: 600 }}>
-                    OK
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setResult(p);
-                    setView("page");
-                  }}
-                  style={{ background: "none", color: COLORS.ink, textAlign: "left", flex: 1 }}
-                >
-                  <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-                    {p.titre || `${p.verbes.length} verbe${p.verbes.length !== 1 ? "s" : ""} · ${p.noms.length} nom${p.noms.length !== 1 ? "s" : ""}`}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: COLORS.muted }}>{new Date(p.created_at).toLocaleDateString("fr-FR")}</div>
-                </button>
-              )}
-              {renamingId !== p.id && (
-                <button onClick={() => startRenaming(p)} style={{ background: "none", color: COLORS.gold, fontSize: "0.8rem" }} title="Renommer">
-                  ✏️
-                </button>
-              )}
-              <button onClick={() => deletePage(p.id)} style={{ background: "none", color: COLORS.danger, fontSize: "0.75rem" }}>
-                Supprimer
-              </button>
-            </div>
-          ))}
-          {pages.length > 0 && <AdSlot label="bannière basse (historique)" />}
-        </div>
-      ) : view === "page" ? (
-        <div>
-          <button
-            onClick={() => setView("history")}
-            style={{ background: "none", color: COLORS.gold, fontSize: "0.85rem", marginBottom: "1.25rem" }}
-          >
-            ← Retour à mes pages
-          </button>
-          {result?.titre && (
-            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.3rem", marginBottom: "1rem" }}>{result.titre}</h2>
-          )}
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-            {result?.verbes?.length > 0 && (
-              <section>
-                <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Verbes</h2>
-                <WordTable
-                  rows={result.verbes}
-                  columns={[
-                    { key: "mot", label: "Mot" },
-                    { key: "passe", label: "Passé" },
-                    { key: "present", label: "Présent" },
-                    { key: "imperatif", label: "Impératif" },
-                    { key: "masdar", label: "Masdar" },
-                  ]}
-                />
-              </section>
-            )}
-            {result?.noms?.length > 0 && (
-              <section>
-                <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Noms</h2>
-                <WordTable
-                  rows={result.noms}
-                  columns={[
-                    { key: "mot", label: "Mot" },
-                    { key: "synonyme", label: "Synonyme" },
-                    { key: "contraire", label: "Contraire" },
-                    { key: "pluriel", label: "Pluriel" },
-                  ]}
-                />
-              </section>
-            )}
-          </div>
-          <AdSlot label="bannière basse (page)" />
-          <p style={{ marginTop: "2rem", fontSize: "0.75rem", color: COLORS.muted, textAlign: "center" }}>
-            Les formes marquées « — » ou « ? » signalent une incertitude plutôt qu'une réponse inventée.
-          </p>
-        </div>
-      ) : (
+      {view === "home" && (
         <>
           <div style={{ borderRadius: 8, padding: "1rem", marginBottom: "1.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.gold}` }}>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
@@ -675,6 +552,195 @@ function MainApp({ token, user, onLogout }) {
           </p>
         </>
       )}
+
+      {view === "history" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {pages.length === 0 && <p style={{ color: COLORS.muted, fontSize: "0.9rem" }}>Aucune page enregistrée pour l'instant.</p>}
+          {pages.map((p) => (
+            <div key={p.id} style={{ borderRadius: 8, padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
+              {renamingId === p.id ? (
+                <div style={{ display: "flex", flex: 1, gap: "0.5rem", alignItems: "center" }}>
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveRename(p.id)}
+                    placeholder="Nom de la page"
+                    maxLength={100}
+                    style={{ flex: 1, padding: "0.4rem 0.6rem", borderRadius: 6, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+                  />
+                  <button onClick={() => saveRename(p.id)} style={{ background: "none", color: COLORS.teal, fontSize: "0.8rem", fontWeight: 600 }}>
+                    OK
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setResult(p);
+                    setView("page");
+                  }}
+                  style={{ background: "none", color: COLORS.ink, textAlign: "left", flex: 1 }}
+                >
+                  <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                    {p.titre || `${p.verbes.length} verbe${p.verbes.length !== 1 ? "s" : ""} · ${p.noms.length} nom${p.noms.length !== 1 ? "s" : ""}`}
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: COLORS.muted }}>{new Date(p.created_at).toLocaleDateString("fr-FR")}</div>
+                </button>
+              )}
+              {renamingId !== p.id && (
+                <button onClick={() => startRenaming(p)} style={{ background: "none", color: COLORS.gold, fontSize: "0.8rem" }} title="Renommer">
+                  ✏️
+                </button>
+              )}
+              <button onClick={() => deletePage(p.id)} style={{ background: "none", color: COLORS.danger, fontSize: "0.75rem" }}>
+                Supprimer
+              </button>
+            </div>
+          ))}
+          {pages.length > 0 && <AdSlot label="bannière basse (historique)" />}
+        </div>
+      )}
+
+      {view === "page" && (
+        <div>
+          <button
+            onClick={() => setView("history")}
+            style={{ background: "none", color: COLORS.gold, fontSize: "0.85rem", marginBottom: "1.25rem" }}
+          >
+            ← Retour à mes pages
+          </button>
+          {result?.titre && (
+            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.3rem", marginBottom: "1rem" }}>{result.titre}</h2>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            {result?.verbes?.length > 0 && (
+              <section>
+                <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Verbes</h2>
+                <WordTable
+                  rows={result.verbes}
+                  columns={[
+                    { key: "mot", label: "Mot" },
+                    { key: "passe", label: "Passé" },
+                    { key: "present", label: "Présent" },
+                    { key: "imperatif", label: "Impératif" },
+                    { key: "masdar", label: "Masdar" },
+                  ]}
+                />
+              </section>
+            )}
+            {result?.noms?.length > 0 && (
+              <section>
+                <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", marginBottom: "0.6rem" }}>Noms</h2>
+                <WordTable
+                  rows={result.noms}
+                  columns={[
+                    { key: "mot", label: "Mot" },
+                    { key: "synonyme", label: "Synonyme" },
+                    { key: "contraire", label: "Contraire" },
+                    { key: "pluriel", label: "Pluriel" },
+                  ]}
+                />
+              </section>
+            )}
+          </div>
+          <AdSlot label="bannière basse (page)" />
+          <p style={{ marginTop: "2rem", fontSize: "0.75rem", color: COLORS.muted, textAlign: "center" }}>
+            Les formes marquées « — » ou « ? » signalent une incertitude plutôt qu'une réponse inventée.
+          </p>
+        </div>
+      )}
+
+      {view === "profile" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ borderRadius: 8, padding: "1.25rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
+            <p style={{ fontSize: "0.75rem", color: COLORS.muted, marginBottom: "0.25rem" }}>Connecté en tant que</p>
+            <p style={{ fontSize: "0.95rem", fontWeight: 600 }}>{user.email}</p>
+          </div>
+
+          <div style={{ borderRadius: 8, padding: "1.25rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.gold}` }}>
+            {subscriptionStatus === "active" ? (
+              <>
+                <p style={{ fontSize: "0.85rem", marginBottom: "0.75rem" }}>✨ Abonnement illimité actif</p>
+                <button
+                  onClick={openBillingPortal}
+                  disabled={upgrading}
+                  style={{ padding: "0.6rem 1rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600, fontSize: "0.85rem" }}
+                >
+                  {upgrading ? "Redirection…" : "Gérer / résilier l'abonnement"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: "0.85rem", marginBottom: "0.75rem" }}>Usage gratuit limité par jour. Passe à l'illimité pour ne plus être bloqué.</p>
+                <button
+                  onClick={startUpgrade}
+                  disabled={upgrading}
+                  style={{ padding: "0.6rem 1rem", borderRadius: 8, background: COLORS.gold, color: COLORS.paper, fontWeight: 600, fontSize: "0.85rem" }}
+                >
+                  {upgrading ? "Redirection…" : "✨ Passer à l'illimité — 4,99€/mois"}
+                </button>
+              </>
+            )}
+          </div>
+
+          <button onClick={onLogout} style={{ padding: "0.75rem", borderRadius: 8, background: "none", border: `1px solid ${COLORS.danger}`, color: COLORS.danger, fontSize: "0.85rem" }}>
+            Déconnexion
+          </button>
+
+          <AdSlot label="bannière profil" />
+
+          <footer style={{ marginTop: "1rem", textAlign: "center", fontSize: "0.75rem", color: COLORS.muted, display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+            <a href="/about.html" style={{ color: COLORS.muted }}>À propos</a>
+            <a href="/confidentialite.html" style={{ color: COLORS.muted }}>Confidentialité</a>
+            <a href="/mentions-legales.html" style={{ color: COLORS.muted }}>Mentions légales</a>
+            <a href="/contact.html" style={{ color: COLORS.muted }}>Contact</a>
+          </footer>
+        </div>
+      )}
+
+      {/* Barre d'onglets fixe en bas, comme les apps natives */}
+      <nav
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: COLORS.paperDark,
+          borderTop: `1px solid ${COLORS.gold}`,
+          display: "flex",
+          justifyContent: "space-around",
+          padding: "0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom))",
+          zIndex: 30,
+        }}
+      >
+        {[
+          { key: "home", icon: "🏠", label: "Accueil" },
+          { key: "history", icon: "📚", label: "Mes pages" },
+          { key: "profile", icon: "👤", label: "Profil" },
+        ].map((tab) => {
+          const active = view === tab.key || (tab.key === "history" && view === "page");
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setView(tab.key)}
+              style={{
+                background: "none",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "2px",
+                color: active ? COLORS.teal : COLORS.muted,
+                fontSize: "0.7rem",
+                fontWeight: active ? 600 : 400,
+                padding: "0.25rem 0.75rem",
+              }}
+            >
+              <span style={{ fontSize: "1.2rem" }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }
