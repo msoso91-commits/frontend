@@ -729,18 +729,20 @@ function MainApp({ token, user, onLogout }) {
         </div>
       )}
 
-      {/* Barre d'onglets fixe en bas, comme les apps natives */}
+      {/* Barre d'onglets flottante, en bulle rectangulaire surélevée */}
       <nav
         style={{
           position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: "calc(1.1rem + env(safe-area-inset-bottom))",
+          left: "50%",
+          transform: "translateX(-50%)",
           background: COLORS.paperDark,
-          borderTop: `1px solid ${COLORS.gold}`,
+          border: `1px solid ${COLORS.gold}`,
+          borderRadius: 18,
+          boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
           display: "flex",
-          justifyContent: "space-around",
-          padding: "0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom))",
+          gap: "0.5rem",
+          padding: "0.5rem 0.75rem",
           zIndex: 30,
         }}
       >
