@@ -289,7 +289,32 @@ function MainApp({ token, user, onLogout }) {
   const [upgrading, setUpgrading] = useState(false);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshingPull, setRefreshingPull] = useState(false);
+  const touchStartY = useRef(null);
   const fileRef = useRef(null);
+
+  function handleTouchStart(e) {
+    if (window.scrollY === 0) touchStartY.current = e.touches[0].clientY;
+  }
+
+  function handleTouchMove(e) {
+    if (touchStartY.current == null) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0 && window.scrollY === 0) {
+      setPullDistance(Math.min(delta, 90));
+    }
+  }
+
+  function handleTouchEnd() {
+    if (pullDistance > 60) {
+      setRefreshingPull(true);
+      refreshData();
+      setTimeout(() => setRefreshingPull(false), 700);
+    }
+    setPullDistance(0);
+    touchStartY.current = null;
+  }
 
   function refreshData() {
     apiFetch("/api/pages", { token })
@@ -407,7 +432,34 @@ function MainApp({ token, user, onLogout }) {
   }
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem" }}>
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem", position: "relative" }}
+    >
+      <div
+        style={{
+          position: "fixed",
+          top: 8,
+          left: "50%",
+          transform: `translateX(-50%) translateY(${Math.min(pullDistance, 90) - 40}px)`,
+          opacity: pullDistance > 10 || refreshingPull ? 1 : 0,
+          transition: refreshingPull || pullDistance === 0 ? "opacity 0.2s, transform 0.2s" : "none",
+          zIndex: 40,
+        }}
+      >
+        <img
+          src="/logo.svg"
+          alt=""
+          width={32}
+          height={32}
+          style={{
+            transform: refreshingPull ? "rotate(360deg)" : `rotate(${pullDistance * 3}deg)`,
+            transition: refreshingPull ? "transform 0.7s linear" : "none",
+          }}
+        />
+      </div>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
