@@ -602,7 +602,24 @@ export default function App() {
   if (checkingSession) {
     return (
       <div style={{ minHeight: "100vh", background: COLORS.paper, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Spinner />
+        <style>{`
+          @keyframes splashPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.75; }
+          }
+          @keyframes splashSpin {
+            to { transform: rotate(360deg); }
+          }
+          .splash-logo { animation: splashPulse 1.4s ease-in-out infinite; }
+          .splash-ring { animation: splashSpin 2.2s linear infinite; transform-origin: 36px 36px; }
+        `}</style>
+        <div style={{ position: "relative", width: 72, height: 72 }}>
+          <svg className="splash-ring" width="72" height="72" viewBox="0 0 72 72" style={{ position: "absolute", top: 0, left: 0 }}>
+            <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.paperDark} strokeWidth="2" />
+            <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.teal} strokeWidth="2" strokeDasharray="40 160" strokeLinecap="round" />
+          </svg>
+          <img src="/logo.svg" alt="" width={56} height={56} className="splash-logo" style={{ position: "absolute", top: 8, left: 8 }} />
+        </div>
       </div>
     );
   }
