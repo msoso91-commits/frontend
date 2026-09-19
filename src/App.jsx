@@ -780,22 +780,27 @@ export default function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [splashLeaving, setSplashLeaving] = useState(false);
 
   useEffect(() => {
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 1200));
     const savedToken = localStorage.getItem("token");
-    if (!savedToken) {
-      setCheckingSession(false);
-      return;
-    }
-    apiFetch("/api/auth/me", { token: savedToken })
-      .then((data) => {
-        setToken(savedToken);
-        setUser(data.user);
-      })
-      .catch(() => {
-        localStorage.removeItem("token");
-      })
-      .finally(() => setCheckingSession(false));
+
+    const sessionCheck = !savedToken
+      ? Promise.resolve()
+      : apiFetch("/api/auth/me", { token: savedToken })
+          .then((data) => {
+            setToken(savedToken);
+            setUser(data.user);
+          })
+          .catch(() => {
+            localStorage.removeItem("token");
+          });
+
+    Promise.all([minDelay, sessionCheck]).then(() => {
+      setSplashLeaving(true);
+      setTimeout(() => setCheckingSession(false), 350);
+    });
   }, []);
 
   function handleAuthenticated(t, u) {
@@ -812,24 +817,46 @@ export default function App() {
 
   if (checkingSession) {
     return (
-      <div style={{ minHeight: "100vh", background: COLORS.paper, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: COLORS.paper,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: splashLeaving ? 0 : 1,
+          transition: "opacity 0.35s ease",
+        }}
+      >
         <style>{`
-          @keyframes splashPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.08); opacity: 0.75; }
+          @keyframes splashIntro {
+            0% { transform: scale(0.4); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
           }
-          @keyframes splashSpin {
-            to { transform: rotate(360deg); }
+          @keyframes splashDraw {
+            from { stroke-dashoffset: 210; }
+            to { stroke-dashoffset: 0; }
           }
-          .splash-logo { animation: splashPulse 1.4s ease-in-out infinite; }
-          .splash-ring { animation: splashSpin 2.2s linear infinite; transform-origin: 36px 36px; }
+          @keyframes splashGlow {
+            0%, 100% { filter: drop-shadow(0 0 0px ${COLORS.gold}); }
+            50% { filter: drop-shadow(0 0 6px ${COLORS.gold}); }
+          }
+          .splash-logo { animation: splashIntro 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, splashGlow 1.6s ease-in-out 0.7s infinite; }
+          .splash-ring { animation: splashDraw 1s ease-out both; transform: rotate(-90deg); transform-origin: 36px 36px; }
+          .splash-word { animation: splashIntro 0.6s ease 0.35s both; }
         `}</style>
-        <div style={{ position: "relative", width: 72, height: 72 }}>
-          <svg className="splash-ring" width="72" height="72" viewBox="0 0 72 72" style={{ position: "absolute", top: 0, left: 0 }}>
-            <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.paperDark} strokeWidth="2" />
-            <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.teal} strokeWidth="2" strokeDasharray="40 160" strokeLinecap="round" />
-          </svg>
-          <img src="/logo.svg" alt="" width={56} height={56} className="splash-logo" style={{ position: "absolute", top: 8, left: 8 }} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{ position: "relative", width: 72, height: 72 }}>
+            <svg className="splash-ring" width="72" height="72" viewBox="0 0 72 72" style={{ position: "absolute", top: 0, left: 0 }}>
+              <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.paperDark} strokeWidth="2" />
+              <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.teal} strokeWidth="2.5" strokeDasharray="210" strokeLinecap="round" />
+            </svg>
+            <img src="/logo.svg" alt="" width={56} height={56} className="splash-logo" style={{ position: "absolute", top: 8, left: 8 }} />
+          </div>
+          <div className="splash-word" style={{ fontFamily: "Amiri, serif", fontSize: "1.3rem", color: COLORS.teal }} dir="rtl">
+            مُفْرَدَات
+          </div>
         </div>
       </div>
     );
