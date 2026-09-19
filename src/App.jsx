@@ -621,7 +621,7 @@ function MainApp({ token, user, onLogout }) {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem 5.5rem", position: "relative", minHeight: "100vh" }}
+      style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem 7.5rem", position: "relative", minHeight: "100vh" }}
     >
       <div
         style={{
