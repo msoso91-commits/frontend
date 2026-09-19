@@ -741,8 +741,8 @@ function MainApp({ token, user, onLogout }) {
           borderRadius: 18,
           boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
           display: "flex",
-          gap: "0.5rem",
-          padding: "0.5rem 0.75rem",
+          gap: "1.25rem",
+          padding: "0.6rem 1.5rem",
           zIndex: 30,
         }}
       >
