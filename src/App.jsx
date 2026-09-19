@@ -175,10 +175,13 @@ function InstallGuide({ onClose }) {
 }
 
 function AuthScreen({ onAuthenticated }) {
-  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const resetTokenFromUrl = new URLSearchParams(window.location.search).get("reset_token");
+  const [mode, setMode] = useState(resetTokenFromUrl ? "reset" : "login"); // "login" | "signup" | "forgot" | "reset"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
 
@@ -199,6 +202,116 @@ function AuthScreen({ onAuthenticated }) {
     }
   }
 
+  async function submitForgotPassword(e) {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setMessage(data.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitResetPassword(e) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await apiFetch("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: resetTokenFromUrl, newPassword }),
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+      setMode("login");
+      setMessage("Mot de passe mis à jour, connecte-toi avec ton nouveau mot de passe.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (mode === "reset") {
+    return (
+      <div style={{ maxWidth: 380, margin: "10vh auto", padding: "0 1rem" }}>
+        <img src="/logo.svg" alt="" width={56} height={56} style={{ display: "block", margin: "0 auto" }} />
+        <h1 style={{ fontFamily: "Fraunces, serif", textAlign: "center", fontSize: "1.4rem", marginTop: "1rem" }}>
+          Nouveau mot de passe
+        </h1>
+        <form onSubmit={submitResetPassword} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.5rem" }}>
+          <input
+            type="password"
+            placeholder="Nouveau mot de passe (8 caractères min.)"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            minLength={8}
+            style={{ padding: "0.75rem", borderRadius: 8, border: `1px solid ${COLORS.paperDark}`, background: COLORS.paperDark, color: COLORS.ink }}
+          />
+          {error && <p style={{ color: COLORS.danger, fontSize: "0.85rem" }}>{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ padding: "0.75rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}
+          >
+            {loading ? "…" : "Valider le nouveau mot de passe"}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  if (mode === "forgot") {
+    return (
+      <div style={{ maxWidth: 380, margin: "10vh auto", padding: "0 1rem" }}>
+        <img src="/logo.svg" alt="" width={56} height={56} style={{ display: "block", margin: "0 auto" }} />
+        <h1 style={{ fontFamily: "Fraunces, serif", textAlign: "center", fontSize: "1.4rem", marginTop: "1rem" }}>
+          Mot de passe oublié
+        </h1>
+        <p style={{ color: COLORS.muted, fontSize: "0.85rem", textAlign: "center", marginTop: "0.5rem" }}>
+          Indique ton email, on t'envoie un lien pour choisir un nouveau mot de passe.
+        </p>
+        <form onSubmit={submitForgotPassword} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.5rem" }}>
+          <input
+            type="email"
+            placeholder="Adresse email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ padding: "0.75rem", borderRadius: 8, border: `1px solid ${COLORS.paperDark}`, background: COLORS.paperDark, color: COLORS.ink }}
+          />
+          {message && <p style={{ color: COLORS.teal, fontSize: "0.85rem" }}>{message}</p>}
+          {error && <p style={{ color: COLORS.danger, fontSize: "0.85rem" }}>{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{ padding: "0.75rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}
+          >
+            {loading ? "…" : "Envoyer le lien"}
+          </button>
+        </form>
+        <button
+          onClick={() => {
+            setMode("login");
+            setError(null);
+            setMessage(null);
+          }}
+          style={{ background: "none", color: COLORS.muted, fontSize: "0.85rem", marginTop: "1rem", width: "100%", textAlign: "center" }}
+        >
+          ← Retour à la connexion
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: 380, margin: "10vh auto", padding: "0 1rem" }}>
       <img src="/logo.svg" alt="" width={56} height={56} style={{ display: "block", margin: "0 auto" }} />
@@ -214,6 +327,7 @@ function AuthScreen({ onAuthenticated }) {
           leurs formes grammaticales et leur traduction.
         </p>
       )}
+      {message && <p style={{ color: COLORS.teal, fontSize: "0.85rem", textAlign: "center", marginTop: "0.75rem" }}>{message}</p>}
       <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1.5rem" }}>
         <input
           type="email"
@@ -232,6 +346,18 @@ function AuthScreen({ onAuthenticated }) {
           minLength={8}
           style={{ padding: "0.75rem", borderRadius: 8, border: `1px solid ${COLORS.paperDark}`, background: COLORS.paperDark, color: COLORS.ink }}
         />
+        {mode === "login" && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode("forgot");
+              setError(null);
+            }}
+            style={{ background: "none", color: COLORS.gold, fontSize: "0.8rem", textAlign: "right", alignSelf: "flex-end" }}
+          >
+            Mot de passe oublié ?
+          </button>
+        )}
         {error && <p style={{ color: COLORS.danger, fontSize: "0.85rem" }}>{error}</p>}
         <button
           type="submit"
@@ -323,6 +449,12 @@ function MainApp({ token, user, onLogout }) {
   const [renameValue, setRenameValue] = useState("");
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshingPull, setRefreshingPull] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const touchStartY = useRef(null);
   const fileRef = useRef(null);
 
@@ -460,6 +592,27 @@ function MainApp({ token, user, onLogout }) {
       await apiFetch(`/api/pages/${id}`, { token, method: "PATCH", body: JSON.stringify({ titre }) });
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function changePassword(e) {
+    e.preventDefault();
+    setPasswordMessage(null);
+    setPasswordLoading(true);
+    try {
+      await apiFetch("/api/auth/password", {
+        token,
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      setPasswordMessage({ type: "success", text: "Mot de passe mis à jour." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setTimeout(() => setShowPasswordForm(false), 1500);
+    } catch (err) {
+      setPasswordMessage({ type: "error", text: err.message });
+    } finally {
+      setPasswordLoading(false);
     }
   }
 
@@ -714,7 +867,61 @@ function MainApp({ token, user, onLogout }) {
             )}
           </div>
 
-          <button onClick={onLogout} style={{ padding: "0.75rem", borderRadius: 8, background: "none", border: `1px solid ${COLORS.danger}`, color: COLORS.danger, fontSize: "0.85rem" }}>
+          <div style={{ borderRadius: 8, padding: "1.25rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
+            {!showPasswordForm ? (
+              <button onClick={() => setShowPasswordForm(true)} style={{ background: "none", color: COLORS.ink, fontSize: "0.85rem", fontWeight: 600 }}>
+                🔒 Changer le mot de passe
+              </button>
+            ) : (
+              <form onSubmit={changePassword} style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                <input
+                  type="password"
+                  placeholder="Mot de passe actuel"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  style={{ padding: "0.6rem", borderRadius: 8, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+                />
+                <input
+                  type="password"
+                  placeholder="Nouveau mot de passe (8 caractères min.)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  style={{ padding: "0.6rem", borderRadius: 8, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+                />
+                {passwordMessage && (
+                  <p style={{ fontSize: "0.8rem", color: passwordMessage.type === "success" ? COLORS.teal : COLORS.danger }}>
+                    {passwordMessage.text}
+                  </p>
+                )}
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    style={{ padding: "0.5rem 1rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600, fontSize: "0.8rem" }}
+                  >
+                    {passwordLoading ? "…" : "Valider"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordForm(false);
+                      setPasswordMessage(null);
+                      setCurrentPassword("");
+                      setNewPassword("");
+                    }}
+                    style={{ padding: "0.5rem 1rem", borderRadius: 8, background: "none", color: COLORS.muted, fontSize: "0.8rem" }}
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          <button onClick={() => setShowLogoutConfirm(true)} style={{ padding: "0.75rem", borderRadius: 8, background: "none", border: `1px solid ${COLORS.danger}`, color: COLORS.danger, fontSize: "0.85rem" }}>
             Déconnexion
           </button>
 
@@ -774,6 +981,34 @@ function MainApp({ token, user, onLogout }) {
           );
         })}
       </nav>
+
+      {showLogoutConfirm && (
+        <div
+          onClick={() => setShowLogoutConfirm(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60, padding: "1rem" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: COLORS.paper, border: `1px solid ${COLORS.gold}`, borderRadius: 12, padding: "1.5rem", maxWidth: 300, width: "100%", textAlign: "center" }}
+          >
+            <p style={{ fontSize: "0.95rem", marginBottom: "1.25rem" }}>Êtes-vous sûr de vouloir vous déconnecter ?</p>
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{ padding: "0.6rem 1.1rem", borderRadius: 8, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={onLogout}
+                style={{ padding: "0.6rem 1.1rem", borderRadius: 8, background: COLORS.danger, color: COLORS.ink, fontWeight: 600, fontSize: "0.85rem" }}
+              >
+                Se déconnecter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
