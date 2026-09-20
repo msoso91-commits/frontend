@@ -469,7 +469,6 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState("");
   const [pullDistance, setPullDistance] = useState(0);
-  const [refreshingPull, setRefreshingPull] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -489,10 +488,8 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
 
   function handleTouchEnd() {
     if (pullDistance > 60) {
-      setRefreshingPull(true);
       refreshData();
       onPullRefresh?.();
-      setTimeout(() => setRefreshingPull(false), 700);
     }
     setPullDistance(0);
     touchStartY.current = null;
@@ -676,29 +673,6 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
       onTouchEnd={handleTouchEnd}
       style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem 7.5rem", position: "relative", minHeight: "100vh" }}
     >
-      <div
-        style={{
-          position: "fixed",
-          top: 8,
-          left: "50%",
-          transform: `translateX(-50%) translateY(${Math.min(refreshingPull ? 60 : pullDistance, 90) - 40}px)`,
-          opacity: pullDistance > 10 || refreshingPull ? 1 : 0,
-          transition: refreshingPull || pullDistance === 0 ? "opacity 0.2s, transform 0.2s" : "none",
-          zIndex: 40,
-        }}
-      >
-        <img
-          src="/logo.svg"
-          alt=""
-          width={32}
-          height={32}
-          style={{
-            transform: refreshingPull ? "rotate(360deg)" : `rotate(${pullDistance * 3}deg)`,
-            transition: refreshingPull ? "transform 0.7s linear" : "none",
-          }}
-        />
-      </div>
-
       <header style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
         <img src="/logo.svg" alt="" width={32} height={32} />
         <div>
