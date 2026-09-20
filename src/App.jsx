@@ -483,7 +483,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
   const containerRef = useRef(null);
 
   function handleTouchStart(e) {
-    if (window.scrollY === 0) touchStartY.current = e.touches[0].clientY;
+    if (window.scrollY <= 2) touchStartY.current = e.touches[0].clientY;
   }
 
   function handleTouchEnd() {
@@ -502,7 +502,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
     function onMove(e) {
       if (touchStartY.current == null) return;
       const delta = e.touches[0].clientY - touchStartY.current;
-      if (delta > 0 && window.scrollY === 0) {
+      if (delta > 0) {
         setPullDistance(Math.min(delta, 90));
       }
     }
