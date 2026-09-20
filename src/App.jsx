@@ -876,14 +876,34 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
       onTouchEnd={handleTouchEnd}
       style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem 7.5rem", position: "relative", minHeight: "100vh", touchAction: "pan-x pan-y" }}
     >
-      <header style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
-        <img src="/logo.svg" alt="" width={32} height={32} />
-        <div>
-          <div style={{ fontFamily: "Amiri, serif", fontSize: "1.3rem", color: COLORS.teal, lineHeight: 1 }} dir="rtl">
-            مُفْرَدَات
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <img src="/logo.svg" alt="" width={32} height={32} />
+          <div>
+            <div style={{ fontFamily: "Amiri, serif", fontSize: "1.3rem", color: COLORS.teal, lineHeight: 1 }} dir="rtl">
+              مُفْرَدَات
+            </div>
+            <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "1rem", margin: "0.2rem 0 0", color: COLORS.muted }}>Mufradat</h1>
           </div>
-          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "1rem", margin: "0.2rem 0 0", color: COLORS.muted }}>Mufradat</h1>
         </div>
+        <button
+          onClick={() => setShowOnboarding(true)}
+          aria-label="Revoir le tutoriel"
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.06)",
+            border: `1px solid ${COLORS.gold}`,
+            color: COLORS.gold,
+            fontFamily: "Fraunces, serif",
+            fontSize: "1rem",
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
+          ?
+        </button>
       </header>
 
       <AdSlot label="bannière haute" />
@@ -1372,29 +1392,6 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
           </div>
         </div>
       )}
-
-      <button
-        onClick={() => setShowOnboarding(true)}
-        aria-label="Revoir le tutoriel"
-        style={{
-          position: "fixed",
-          right: "1rem",
-          bottom: "6.75rem",
-          width: 42,
-          height: 42,
-          borderRadius: "50%",
-          background: COLORS.paperDark,
-          border: `1px solid ${COLORS.gold}`,
-          color: COLORS.gold,
-          fontFamily: "Fraunces, serif",
-          fontSize: "1.1rem",
-          fontWeight: 700,
-          boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
-          zIndex: 35,
-        }}
-      >
-        ?
-      </button>
 
       {showOnboarding && <WelcomeOnboarding onClose={() => setShowOnboarding(false)} />}
       <Toast message={toast} />
