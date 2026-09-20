@@ -984,7 +984,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
               value={pagesSearch}
               onChange={(e) => setPagesSearch(e.target.value)}
               placeholder="🔍 Rechercher une page par nom"
-              style={{ padding: "0.6rem 0.8rem", borderRadius: 8, border: `1px solid ${COLORS.paperDark}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem", marginBottom: "0.25rem" }}
+              style={{ padding: "0.6rem 0.8rem", borderRadius: 8, border: `1px solid ${COLORS.paperDark}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "16px", marginBottom: "0.25rem" }}
             />
           )}
           {pages.length === 0 && <p style={{ color: COLORS.muted, fontSize: "0.9rem" }}>Aucune page enregistrée pour l'instant.</p>}
@@ -1005,7 +1005,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
                     onKeyDown={(e) => e.key === "Enter" && saveRename(p.id)}
                     placeholder="Nom de la page"
                     maxLength={100}
-                    style={{ flex: 1, padding: "0.4rem 0.6rem", borderRadius: 6, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+                    style={{ flex: 1, padding: "0.4rem 0.6rem", borderRadius: 6, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "16px" }}
                   />
                   <button onClick={() => saveRename(p.id)} style={{ background: "none", color: COLORS.teal, fontSize: "0.8rem", fontWeight: 600 }}>
                     OK
@@ -1139,7 +1139,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
-                  style={{ padding: "0.6rem", borderRadius: 8, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+                  style={{ padding: "0.6rem", borderRadius: 8, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "16px" }}
                 />
                 <input
                   type="password"
@@ -1148,7 +1148,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={8}
-                  style={{ padding: "0.6rem", borderRadius: 8, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+                  style={{ padding: "0.6rem", borderRadius: 8, border: `1px solid ${COLORS.gold}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "16px" }}
                 />
                 {passwordMessage && (
                   <p style={{ fontSize: "0.8rem", color: passwordMessage.type === "success" ? COLORS.teal : COLORS.danger }}>
