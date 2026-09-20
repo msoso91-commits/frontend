@@ -37,6 +37,37 @@ function Spinner() {
 
 // Emplacement publicitaire : remplace le contenu par ton bloc <ins class="adsbygoogle">
 // une fois ton compte Google AdSense approuvé.
+function Toast({ message }) {
+  if (!message) return null;
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: "6.5rem",
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: COLORS.paperDark,
+        border: `1px solid ${COLORS.teal}`,
+        color: COLORS.ink,
+        padding: "0.6rem 1.1rem",
+        borderRadius: 999,
+        fontSize: "0.8rem",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+        zIndex: 80,
+        animation: "toastIn 0.25s ease",
+      }}
+    >
+      <style>{`
+        @keyframes toastIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
+      {message}
+    </div>
+  );
+}
+
 function AdSlot({ label }) {
   return (
     <div
@@ -557,6 +588,18 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
   const [adminLoading, setAdminLoading] = useState(false);
   const isAdmin = user.email?.toLowerCase() === "sophiane.m2002@outlook.fr";
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [analysisStage, setAnalysisStage] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const pendingDeleteRef = useRef(null);
+  const [pagesSearch, setPagesSearch] = useState("");
+  const toastTimeoutRef = useRef(null);
+
+  function showToast(message) {
+    setToast(message);
+    clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2000);
+  }
 
   useEffect(() => {
     if (localStorage.getItem("mufradat_show_onboarding") === "1") {
@@ -662,8 +705,26 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
     if (!file) return;
     setError(null);
     setFreshResult(null);
+
     const reader = new FileReader();
-    reader.onload = () => setImage({ data: reader.result, mediaType: file.type });
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Redimensionne les photos trop grandes (typique d'un appareil photo de téléphone)
+        // pour accélérer l'envoi et l'analyse, sans perte de lisibilité notable du texte.
+        const maxDim = 1600;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL("image/jpeg", 0.85);
+        setImage({ data: compressed, mediaType: "image/jpeg" });
+      };
+      img.onerror = () => setImage({ data: reader.result, mediaType: file.type });
+      img.src = reader.result;
+    };
     reader.readAsDataURL(file);
   }
 
@@ -678,6 +739,11 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
     if (!image) return;
     setLoading(true);
     setError(null);
+    setAnalysisStage(0);
+    const stageTimers = [
+      setTimeout(() => setAnalysisStage(1), 1400),
+      setTimeout(() => setAnalysisStage(2), 3200),
+    ];
     try {
       const base64 = image.data.split(",")[1];
       const data = await apiFetch("/api/pages/analyze", {
@@ -690,15 +756,33 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
     } catch (err) {
       setError(err.message);
     } finally {
+      stageTimers.forEach(clearTimeout);
       setLoading(false);
     }
   }
 
-  async function deletePage(id) {
+  function deletePage(id) {
+    const page = pages.find((p) => p.id === id);
+    if (!page) return;
     setPages((prev) => prev.filter((p) => p.id !== id));
-    try {
-      await apiFetch(`/api/pages/${id}`, { token, method: "DELETE" });
-    } catch {}
+
+    clearTimeout(pendingDeleteRef.current?.timer);
+    const timer = setTimeout(async () => {
+      try {
+        await apiFetch(`/api/pages/${id}`, { token, method: "DELETE" });
+      } catch {}
+      setPendingDelete(null);
+    }, 4000);
+
+    pendingDeleteRef.current = { timer };
+    setPendingDelete(page);
+  }
+
+  function undoDeletePage() {
+    if (!pendingDelete) return;
+    clearTimeout(pendingDeleteRef.current?.timer);
+    setPages((prev) => [pendingDelete, ...prev].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+    setPendingDelete(null);
   }
 
   function startRenaming(p) {
@@ -710,6 +794,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
     const titre = renameValue.trim();
     setPages((prev) => prev.map((p) => (p.id === id ? { ...p, titre } : p)));
     setRenamingId(null);
+    showToast("Renommé ✓");
     try {
       await apiFetch(`/api/pages/${id}`, { token, method: "PATCH", body: JSON.stringify({ titre }) });
     } catch (err) {
@@ -739,6 +824,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
   }
 
   function reportError(wordType, row) {
+    showToast("Signalé, merci ✓");
     apiFetch("/api/pages/report-error", {
       token,
       method: "POST",
@@ -808,7 +894,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
             Analyseur
           </h1>
           <div style={{ borderRadius: 8, padding: "1rem", marginBottom: "1.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.gold}` }}>
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
             {!image ? (
               <button
                 onClick={() => fileRef.current?.click()}
@@ -828,7 +914,9 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
                     style={{ padding: "0.6rem 1rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem" }}
                   >
                     {loading && <Spinner />}
-                    {loading ? "Analyse en cours…" : "Analyser la page"}
+                    {loading
+                      ? ["Lecture du texte…", "Analyse grammaticale…", "Finalisation…"][analysisStage]
+                      : "Analyser la page"}
                   </button>
                   <button onClick={() => fileRef.current?.click()} style={{ padding: "0.6rem 1rem", borderRadius: 8, background: COLORS.paperDark, color: COLORS.ink }}>
                     Changer
@@ -891,8 +979,22 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
           <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "1.9rem", fontWeight: 700, color: COLORS.ink, marginBottom: "0.25rem" }}>
             Pages
           </h1>
+          {pages.length > 0 && (
+            <input
+              value={pagesSearch}
+              onChange={(e) => setPagesSearch(e.target.value)}
+              placeholder="🔍 Rechercher une page par nom"
+              style={{ padding: "0.6rem 0.8rem", borderRadius: 8, border: `1px solid ${COLORS.paperDark}`, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem", marginBottom: "0.25rem" }}
+            />
+          )}
           {pages.length === 0 && <p style={{ color: COLORS.muted, fontSize: "0.9rem" }}>Aucune page enregistrée pour l'instant.</p>}
-          {pages.map((p) => (
+          {pages.length > 0 &&
+            pages.filter((p) => (p.titre || "").toLowerCase().includes(pagesSearch.toLowerCase())).length === 0 && (
+              <p style={{ color: COLORS.muted, fontSize: "0.9rem" }}>Aucune page ne correspond à ta recherche.</p>
+            )}
+          {pages
+            .filter((p) => (p.titre || "").toLowerCase().includes(pagesSearch.toLowerCase()))
+            .map((p) => (
             <div key={p.id} style={{ borderRadius: 8, padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
               {renamingId === p.id ? (
                 <div style={{ display: "flex", flex: 1, gap: "0.5rem", alignItems: "center" }}>
@@ -1272,6 +1374,36 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
       )}
 
       {showOnboarding && <WelcomeOnboarding onClose={() => setShowOnboarding(false)} />}
+      <Toast message={toast} />
+      {pendingDelete && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "6.5rem",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: COLORS.paperDark,
+            border: `1px solid ${COLORS.danger}`,
+            color: COLORS.ink,
+            padding: "0.6rem 0.6rem 0.6rem 1.1rem",
+            borderRadius: 999,
+            fontSize: "0.8rem",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+            zIndex: 80,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+          }}
+        >
+          Page supprimée
+          <button
+            onClick={undoDeletePage}
+            style={{ background: "none", color: COLORS.teal, fontWeight: 600, fontSize: "0.8rem", padding: "0.3rem 0.6rem" }}
+          >
+            Annuler
+          </button>
+        </div>
+      )}
     </div>
   );
 }
