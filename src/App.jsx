@@ -703,6 +703,9 @@ function MainApp({ token, user, onLogout }) {
 
       {view === "home" && (
         <>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "1.9rem", fontWeight: 700, color: COLORS.ink, marginBottom: "1.25rem" }}>
+            Analyseur
+          </h1>
           <div style={{ borderRadius: 8, padding: "1rem", marginBottom: "1.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.gold}` }}>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
             {!image ? (
@@ -784,6 +787,9 @@ function MainApp({ token, user, onLogout }) {
 
       {view === "history" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "1.9rem", fontWeight: 700, color: COLORS.ink, marginBottom: "0.25rem" }}>
+            Pages
+          </h1>
           {pages.length === 0 && <p style={{ color: COLORS.muted, fontSize: "0.9rem" }}>Aucune page enregistrée pour l'instant.</p>}
           {pages.map((p) => (
             <div key={p.id} style={{ borderRadius: 8, padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
@@ -883,6 +889,9 @@ function MainApp({ token, user, onLogout }) {
 
       {view === "profile" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "1.9rem", fontWeight: 700, color: COLORS.ink, marginBottom: "0.25rem" }}>
+            Profil
+          </h1>
           <div style={{ borderRadius: 8, padding: "1.25rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.paperDark}` }}>
             <p style={{ fontSize: "0.75rem", color: COLORS.muted, marginBottom: "0.25rem" }}>Connecté en tant que</p>
             <p style={{ fontSize: "0.95rem", fontWeight: 600 }}>{user.email}</p>
