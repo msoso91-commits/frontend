@@ -472,6 +472,10 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showAdminReports, setShowAdminReports] = useState(false);
+  const [adminReports, setAdminReports] = useState([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const isAdmin = user.email?.toLowerCase() === "sophiane.m2002@outlook.fr";
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -663,6 +667,31 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
       setError(err.message);
       setDeletingAccount(false);
       setShowDeleteConfirm(false);
+    }
+  }
+
+  async function loadAdminReports() {
+    setAdminLoading(true);
+    try {
+      const data = await apiFetch("/api/admin/reports", { token });
+      setAdminReports(data.reports);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function toggleResolved(report) {
+    setAdminReports((prev) => prev.map((r) => (r.id === report.id ? { ...r, resolved: !r.resolved } : r)));
+    try {
+      await apiFetch(`/api/admin/reports/${report.id}`, {
+        token,
+        method: "PATCH",
+        body: JSON.stringify({ resolved: !report.resolved }),
+      });
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -960,6 +989,73 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
               </form>
             )}
           </div>
+
+          {isAdmin && (
+            <div style={{ borderRadius: 8, padding: "1.25rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.gold}` }}>
+              {!showAdminReports ? (
+                <button
+                  onClick={() => {
+                    setShowAdminReports(true);
+                    loadAdminReports();
+                  }}
+                  style={{ background: "none", color: COLORS.gold, fontSize: "0.85rem", fontWeight: 600 }}
+                >
+                  🛠️ Signalements d'erreurs
+                </button>
+              ) : (
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 600, color: COLORS.gold }}>🛠️ Signalements d'erreurs</span>
+                    <button onClick={() => setShowAdminReports(false)} style={{ background: "none", color: COLORS.muted, fontSize: "0.75rem" }}>
+                      Fermer
+                    </button>
+                  </div>
+                  {adminLoading && <p style={{ fontSize: "0.8rem", color: COLORS.muted }}>Chargement…</p>}
+                  {!adminLoading && adminReports.length === 0 && (
+                    <p style={{ fontSize: "0.8rem", color: COLORS.muted }}>Aucun signalement pour l'instant.</p>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", maxHeight: 400, overflowY: "auto" }}>
+                    {adminReports.map((r) => (
+                      <div
+                        key={r.id}
+                        style={{
+                          borderRadius: 8,
+                          padding: "0.75rem",
+                          background: "rgba(255,255,255,0.03)",
+                          border: `1px solid ${r.resolved ? COLORS.paperDark : COLORS.danger}`,
+                          opacity: r.resolved ? 0.55 : 1,
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+                          <div style={{ fontSize: "0.75rem", color: COLORS.muted }}>
+                            {r.word_type === "verbe" ? "Verbe" : "Nom"} · {r.email} · {new Date(r.created_at).toLocaleDateString("fr-FR")}
+                          </div>
+                          <button
+                            onClick={() => toggleResolved(r)}
+                            style={{ background: "none", color: r.resolved ? COLORS.muted : COLORS.teal, fontSize: "0.7rem", whiteSpace: "nowrap" }}
+                          >
+                            {r.resolved ? "Rouvrir" : "✓ Traité"}
+                          </button>
+                        </div>
+                        <pre
+                          style={{
+                            fontFamily: "monospace",
+                            fontSize: "0.7rem",
+                            color: COLORS.ink,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            marginTop: "0.4rem",
+                          }}
+                        >
+                          {JSON.stringify(r.row_data, null, 2)}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <button onClick={() => setShowLogoutConfirm(true)} style={{ padding: "0.75rem", borderRadius: 8, background: "none", border: `1px solid ${COLORS.danger}`, color: COLORS.danger, fontSize: "0.85rem" }}>
             Déconnexion
