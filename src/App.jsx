@@ -874,7 +874,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
       ref={containerRef}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem 7.5rem", position: "relative", minHeight: "100vh" }}
+      style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem 7.5rem", position: "relative", minHeight: "100vh", touchAction: "pan-x pan-y" }}
     >
       <header style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderBottom: `1px solid ${COLORS.gold}`, paddingBottom: "1rem", marginBottom: "1.5rem" }}>
         <img src="/logo.svg" alt="" width={32} height={32} />
@@ -1040,7 +1040,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
       )}
 
       {view === "page" && (
-        <div>
+        <div style={{ touchAction: "pinch-zoom pan-x pan-y" }}>
           <button
             onClick={() => setView("history")}
             style={{ background: "none", color: COLORS.gold, fontSize: "0.85rem", marginBottom: "1.25rem" }}
