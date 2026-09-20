@@ -1373,6 +1373,29 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
         </div>
       )}
 
+      <button
+        onClick={() => setShowOnboarding(true)}
+        aria-label="Revoir le tutoriel"
+        style={{
+          position: "fixed",
+          right: "1rem",
+          bottom: "6.75rem",
+          width: 42,
+          height: 42,
+          borderRadius: "50%",
+          background: COLORS.paperDark,
+          border: `1px solid ${COLORS.gold}`,
+          color: COLORS.gold,
+          fontFamily: "Fraunces, serif",
+          fontSize: "1.1rem",
+          fontWeight: 700,
+          boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+          zIndex: 35,
+        }}
+      >
+        ?
+      </button>
+
       {showOnboarding && <WelcomeOnboarding onClose={() => setShowOnboarding(false)} />}
       <Toast message={toast} />
       {pendingDelete && (
