@@ -196,8 +196,11 @@ function WelcomeOnboarding({ onClose }) {
 }
 
 function InstallGuide({ onClose }) {
+  const detectedPlatform = /android/i.test(navigator.userAgent) ? "android" : "ios";
+  const [platform, setPlatform] = useState(detectedPlatform);
   const [step, setStep] = useState(0);
-  const steps = [
+
+  const iosSteps = [
     {
       title: "1. Ouvre le menu de partage",
       text: "Dans Safari, appuie sur l'icône de partage en bas de l'écran.",
@@ -241,10 +244,56 @@ function InstallGuide({ onClose }) {
     },
   ];
 
-  useEffect(() => {
-    const id = setInterval(() => setStep((s) => (s + 1) % steps.length), 2800);
-    return () => clearInterval(id);
-  }, []);
+  const androidSteps = [
+    {
+      title: "1. Ouvre le menu du navigateur",
+      text: "Dans Chrome, appuie sur les trois points (⋮) en haut à droite de l'écran.",
+      icon: (
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <rect x="10" y="10" width="52" height="52" rx="12" fill="none" stroke={COLORS.gold} strokeWidth="3" />
+          <g className="install-guide-pulse">
+            <circle cx="36" cy="24" r="3" fill={COLORS.teal} />
+            <circle cx="36" cy="36" r="3" fill={COLORS.teal} />
+            <circle cx="36" cy="48" r="3" fill={COLORS.teal} />
+          </g>
+        </svg>
+      ),
+    },
+    {
+      title: "2. Sélectionne « Installer l'application »",
+      text: "Dans le menu qui s'ouvre, cherche « Installer l'application » ou « Ajouter à l'écran d'accueil ».",
+      icon: (
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <rect x="10" y="10" width="52" height="52" rx="12" fill="none" stroke={COLORS.gold} strokeWidth="3" />
+          <rect x="20" y="22" width="32" height="6" rx="3" fill={COLORS.muted} opacity="0.4" />
+          <rect x="20" y="33" width="32" height="6" rx="3" fill={COLORS.teal} className="install-guide-pulse" />
+          <rect x="20" y="44" width="20" height="6" rx="3" fill={COLORS.muted} opacity="0.4" />
+        </svg>
+      ),
+    },
+    {
+      title: "3. Confirme l'installation",
+      text: "Appuie sur « Installer » — l'icône Mufradat apparaît sur ton écran d'accueil comme une vraie app.",
+      icon: (
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <rect x="14" y="14" width="44" height="44" rx="11" fill={COLORS.paperDark} stroke={COLORS.gold} strokeWidth="2" />
+          <g transform="translate(36,36)">
+            <rect x="-8" y="-8" width="16" height="16" fill="none" stroke={COLORS.gold} strokeWidth="1.5" />
+            <rect x="-8" y="-8" width="16" height="16" fill="none" stroke={COLORS.gold} strokeWidth="1.5" transform="rotate(45)" />
+            <circle cx="0" cy="0" r="3" fill={COLORS.teal} />
+          </g>
+          <circle cx="36" cy="36" r="26" fill="none" stroke={COLORS.teal} strokeWidth="2" className="install-guide-ring" />
+        </svg>
+      ),
+    },
+  ];
+
+  const steps = platform === "android" ? androidSteps : iosSteps;
+
+  function switchPlatform(p) {
+    setPlatform(p);
+    setStep(0);
+  }
 
   return (
     <div
@@ -263,7 +312,35 @@ function InstallGuide({ onClose }) {
         onClick={(e) => e.stopPropagation()}
         style={{ background: COLORS.paper, border: `1px solid ${COLORS.gold}`, borderRadius: 12, padding: "1.75rem 1.5rem", maxWidth: 320, width: "100%", textAlign: "center" }}
       >
-        <p style={{ color: COLORS.muted, fontSize: "0.75rem", marginBottom: "1rem" }}>Ajouter Mufradat à l'écran d'accueil (Safari, iPhone)</p>
+        <p style={{ color: COLORS.muted, fontSize: "0.75rem", marginBottom: "0.75rem" }}>Ajouter Mufradat à l'écran d'accueil</p>
+        <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+          <button
+            onClick={() => switchPlatform("ios")}
+            style={{
+              padding: "0.35rem 0.9rem",
+              borderRadius: 999,
+              fontSize: "0.75rem",
+              background: platform === "ios" ? COLORS.teal : "rgba(255,255,255,0.06)",
+              color: platform === "ios" ? COLORS.paper : COLORS.muted,
+              fontWeight: platform === "ios" ? 600 : 400,
+            }}
+          >
+            iPhone
+          </button>
+          <button
+            onClick={() => switchPlatform("android")}
+            style={{
+              padding: "0.35rem 0.9rem",
+              borderRadius: 999,
+              fontSize: "0.75rem",
+              background: platform === "android" ? COLORS.teal : "rgba(255,255,255,0.06)",
+              color: platform === "android" ? COLORS.paper : COLORS.muted,
+              fontWeight: platform === "android" ? 600 : 400,
+            }}
+          >
+            Android
+          </button>
+        </div>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>{steps[step].icon}</div>
         <h3 style={{ fontFamily: "Fraunces, serif", fontSize: "1.05rem", margin: "0 0 0.4rem" }}>{steps[step].title}</h3>
         <p style={{ color: COLORS.muted, fontSize: "0.85rem", lineHeight: 1.5 }}>{steps[step].text}</p>
@@ -276,9 +353,22 @@ function InstallGuide({ onClose }) {
             />
           ))}
         </div>
-        <button onClick={onClose} style={{ marginTop: "0.5rem", padding: "0.6rem 1.2rem", borderRadius: 8, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}>
-          Fermer
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {step > 0 && (
+            <button
+              onClick={() => setStep((s) => s - 1)}
+              style={{ flex: 1, padding: "0.6rem", borderRadius: 8, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+            >
+              Précédent
+            </button>
+          )}
+          <button
+            onClick={() => (step === steps.length - 1 ? onClose() : setStep((s) => s + 1))}
+            style={{ flex: 1, padding: "0.6rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600, fontSize: "0.85rem" }}
+          >
+            {step === steps.length - 1 ? "Terminé" : "Suivant"}
+          </button>
+        </div>
       </div>
     </div>
   );
