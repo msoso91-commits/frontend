@@ -456,7 +456,7 @@ function WordTable({ rows, columns, onReport }) {
   );
 }
 
-function MainApp({ token, user, onLogout }) {
+function MainApp({ token, user, onLogout, onPullRefresh }) {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -481,27 +481,40 @@ function MainApp({ token, user, onLogout }) {
   const touchStartY = useRef(null);
   const fileRef = useRef(null);
 
+  const containerRef = useRef(null);
+
   function handleTouchStart(e) {
     if (window.scrollY === 0) touchStartY.current = e.touches[0].clientY;
-  }
-
-  function handleTouchMove(e) {
-    if (touchStartY.current == null) return;
-    const delta = e.touches[0].clientY - touchStartY.current;
-    if (delta > 0 && window.scrollY === 0) {
-      setPullDistance(Math.min(delta, 90));
-    }
   }
 
   function handleTouchEnd() {
     if (pullDistance > 60) {
       setRefreshingPull(true);
       refreshData();
+      onPullRefresh?.();
       setTimeout(() => setRefreshingPull(false), 700);
     }
     setPullDistance(0);
     touchStartY.current = null;
   }
+
+  // Écouteur natif (non passif) pour pouvoir bloquer le rebond de scroll de Safari
+  // pendant le geste de tirage — sans ça, les deux gestes se battent et le
+  // mouvement paraît saccadé / ne pas répondre correctement.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    function onMove(e) {
+      if (touchStartY.current == null) return;
+      const delta = e.touches[0].clientY - touchStartY.current;
+      if (delta > 0 && window.scrollY === 0) {
+        e.preventDefault();
+        setPullDistance(Math.min(delta, 90));
+      }
+    }
+    el.addEventListener("touchmove", onMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onMove);
+  }, []);
 
   function refreshData() {
     apiFetch("/api/pages", { token })
@@ -661,8 +674,8 @@ function MainApp({ token, user, onLogout }) {
 
   return (
     <div
+      ref={containerRef}
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       style={{ maxWidth: 720, margin: "0 auto", padding: "1.5rem 1rem 7.5rem", position: "relative", minHeight: "100vh" }}
     >
@@ -671,7 +684,7 @@ function MainApp({ token, user, onLogout }) {
           position: "fixed",
           top: 8,
           left: "50%",
-          transform: `translateX(-50%) translateY(${Math.min(pullDistance, 90) - 40}px)`,
+          transform: `translateX(-50%) translateY(${Math.min(refreshingPull ? 60 : pullDistance, 90) - 40}px)`,
           opacity: pullDistance > 10 || refreshingPull ? 1 : 0,
           transition: refreshingPull || pullDistance === 0 ? "opacity 0.2s, transform 0.2s" : "none",
           zIndex: 40,
@@ -1106,11 +1119,64 @@ function MainApp({ token, user, onLogout }) {
   );
 }
 
+function SplashScreen({ leaving, overlay }) {
+  return (
+    <div
+      style={{
+        position: overlay ? "fixed" : "static",
+        inset: overlay ? 0 : undefined,
+        zIndex: overlay ? 100 : undefined,
+        minHeight: "100vh",
+        background: COLORS.paper,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: leaving ? 0 : 1,
+        transition: "opacity 0.35s ease",
+      }}
+    >
+      <style>{`
+        @keyframes splashIntro {
+          0% { transform: scale(0.4); opacity: 0; }
+          60% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes splashDraw {
+          from { stroke-dashoffset: 210; }
+          to { stroke-dashoffset: 0; }
+        }
+        @keyframes splashGlow {
+          0%, 100% { filter: drop-shadow(0 0 0px ${COLORS.gold}); }
+          50% { filter: drop-shadow(0 0 6px ${COLORS.gold}); }
+        }
+        .splash-logo { animation: splashIntro 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, splashGlow 1.6s ease-in-out 0.7s infinite; }
+        .splash-ring { animation: splashDraw 1s ease-out both; transform: rotate(-90deg); transform-origin: 36px 36px; }
+        .splash-word { animation: splashIntro 0.6s ease 0.35s both; }
+      `}</style>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ position: "relative", width: 72, height: 72 }}>
+          <svg className="splash-ring" width="72" height="72" viewBox="0 0 72 72" style={{ position: "absolute", top: 0, left: 0 }}>
+            <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.paperDark} strokeWidth="2" />
+            <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.teal} strokeWidth="2.5" strokeDasharray="210" strokeLinecap="round" />
+          </svg>
+          <img src="/logo.svg" alt="" width={56} height={56} className="splash-logo" style={{ position: "absolute", top: 8, left: 8 }} />
+        </div>
+        <div className="splash-word" style={{ fontFamily: "Amiri, serif", fontSize: "1.3rem", color: COLORS.teal }} dir="rtl">
+          مُفْرَدَات
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [splashLeaving, setSplashLeaving] = useState(false);
+  const [showResumeSplash, setShowResumeSplash] = useState(false);
+  const hasMountedRef = useRef(false);
+  const resumeTimeoutRef = useRef(null);
 
   useEffect(() => {
     const minDelay = new Promise((resolve) => setTimeout(resolve, 1200));
@@ -1129,8 +1195,33 @@ export default function App() {
 
     Promise.all([minDelay, sessionCheck]).then(() => {
       setSplashLeaving(true);
-      setTimeout(() => setCheckingSession(false), 350);
+      setTimeout(() => {
+        setCheckingSession(false);
+        hasMountedRef.current = true;
+      }, 350);
     });
+  }, []);
+
+  function playResumeSplash() {
+    if (!hasMountedRef.current) return;
+    setShowResumeSplash(true);
+    clearTimeout(resumeTimeoutRef.current);
+    resumeTimeoutRef.current = setTimeout(() => setShowResumeSplash(false), 1100);
+  }
+
+  // Rejoue brièvement l'animation quand l'utilisateur revient sur l'app
+  // (changement d'onglet, retour au premier plan) sans avoir fermé l'app.
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") playResumeSplash();
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", playResumeSplash);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", playResumeSplash);
+      clearTimeout(resumeTimeoutRef.current);
+    };
   }, []);
 
   function handleAuthenticated(t, u) {
@@ -1146,59 +1237,17 @@ export default function App() {
   }
 
   if (checkingSession) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: COLORS.paper,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: splashLeaving ? 0 : 1,
-          transition: "opacity 0.35s ease",
-        }}
-      >
-        <style>{`
-          @keyframes splashIntro {
-            0% { transform: scale(0.4); opacity: 0; }
-            60% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-          }
-          @keyframes splashDraw {
-            from { stroke-dashoffset: 210; }
-            to { stroke-dashoffset: 0; }
-          }
-          @keyframes splashGlow {
-            0%, 100% { filter: drop-shadow(0 0 0px ${COLORS.gold}); }
-            50% { filter: drop-shadow(0 0 6px ${COLORS.gold}); }
-          }
-          .splash-logo { animation: splashIntro 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, splashGlow 1.6s ease-in-out 0.7s infinite; }
-          .splash-ring { animation: splashDraw 1s ease-out both; transform: rotate(-90deg); transform-origin: 36px 36px; }
-          .splash-word { animation: splashIntro 0.6s ease 0.35s both; }
-        `}</style>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
-          <div style={{ position: "relative", width: 72, height: 72 }}>
-            <svg className="splash-ring" width="72" height="72" viewBox="0 0 72 72" style={{ position: "absolute", top: 0, left: 0 }}>
-              <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.paperDark} strokeWidth="2" />
-              <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.teal} strokeWidth="2.5" strokeDasharray="210" strokeLinecap="round" />
-            </svg>
-            <img src="/logo.svg" alt="" width={56} height={56} className="splash-logo" style={{ position: "absolute", top: 8, left: 8 }} />
-          </div>
-          <div className="splash-word" style={{ fontFamily: "Amiri, serif", fontSize: "1.3rem", color: COLORS.teal }} dir="rtl">
-            مُفْرَدَات
-          </div>
-        </div>
-      </div>
-    );
+    return <SplashScreen leaving={splashLeaving} />;
   }
 
   return (
     <div style={{ minHeight: "100vh", background: COLORS.paper }}>
       {token && user ? (
-        <MainApp token={token} user={user} onLogout={handleLogout} />
+        <MainApp token={token} user={user} onLogout={handleLogout} onPullRefresh={playResumeSplash} />
       ) : (
         <AuthScreen onAuthenticated={handleAuthenticated} />
       )}
+      {showResumeSplash && <SplashScreen leaving={false} overlay />}
     </div>
   );
 }
