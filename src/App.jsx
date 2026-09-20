@@ -498,9 +498,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
     touchStartY.current = null;
   }
 
-  // Écouteur natif (non passif) pour pouvoir bloquer le rebond de scroll de Safari
-  // pendant le geste de tirage — sans ça, les deux gestes se battent et le
-  // mouvement paraît saccadé / ne pas répondre correctement.
+  // Écouteur natif pour suivre le geste de tirage (le rebond naturel de Safari reste actif).
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -508,11 +506,10 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
       if (touchStartY.current == null) return;
       const delta = e.touches[0].clientY - touchStartY.current;
       if (delta > 0 && window.scrollY === 0) {
-        e.preventDefault();
         setPullDistance(Math.min(delta, 90));
       }
     }
-    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchmove", onMove, { passive: true });
     return () => el.removeEventListener("touchmove", onMove);
   }, []);
 
