@@ -85,6 +85,85 @@ function ProfileIcon({ color }) {
   );
 }
 
+function CameraIcon({ color }) {
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <rect x="4" y="11" width="32" height="22" rx="4" stroke={color} strokeWidth="2" />
+      <path d="M14 11l2.4-4h7.2l2.4 4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="20" cy="22" r="6.5" stroke={color} strokeWidth="2" />
+    </svg>
+  );
+}
+
+function StarIcon({ color }) {
+  return (
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <g transform="translate(20,20)">
+        <rect x="-10" y="-10" width="20" height="20" fill="none" stroke={color} strokeWidth="2" />
+        <rect x="-10" y="-10" width="20" height="20" fill="none" stroke={color} strokeWidth="2" transform="rotate(45)" />
+      </g>
+    </svg>
+  );
+}
+
+function WelcomeOnboarding({ onClose }) {
+  const [step, setStep] = useState(0);
+  const steps = [
+    {
+      icon: <StarIcon color={COLORS.gold} />,
+      title: "Bienvenue sur Mufradat",
+      text: "Ton compagnon pour apprendre le vocabulaire arabe, directement à partir de tes lectures.",
+    },
+    {
+      icon: <CameraIcon color={COLORS.teal} />,
+      title: "Prends une page en photo",
+      text: "Depuis l'onglet Accueil, cadre une page de livre — verbes et mots sont analysés en quelques secondes.",
+    },
+    {
+      icon: <BookIcon color={COLORS.gold} />,
+      title: "Retrouve tes pages",
+      text: "Chaque analyse est sauvegardée dans l'onglet Pages. Tu peux les renommer ou les supprimer à tout moment.",
+    },
+    {
+      icon: <ProfileIcon color={COLORS.teal} />,
+      title: "Usage gratuit ou illimité",
+      text: "Quelques analyses gratuites par jour, ou l'illimité via l'onglet Profil quand tu veux aller plus loin.",
+    },
+  ];
+  const isLast = step === steps.length - 1;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 70, padding: "1rem" }}>
+      <div style={{ background: COLORS.paper, border: `1px solid ${COLORS.gold}`, borderRadius: 14, padding: "2rem 1.5rem", maxWidth: 340, width: "100%", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.25rem" }}>{steps[step].icon}</div>
+        <h3 style={{ fontFamily: "Fraunces, serif", fontSize: "1.2rem", margin: "0 0 0.6rem" }}>{steps[step].title}</h3>
+        <p style={{ color: COLORS.muted, fontSize: "0.88rem", lineHeight: 1.6 }}>{steps[step].text}</p>
+        <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", margin: "1.5rem 0 1.25rem" }}>
+          {steps.map((_, i) => (
+            <span
+              key={i}
+              style={{ width: 7, height: 7, borderRadius: "50%", background: i === step ? COLORS.teal : COLORS.paperDark }}
+            />
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {step > 0 && (
+            <button onClick={() => setStep((s) => s - 1)} style={{ flex: 1, padding: "0.65rem", borderRadius: 8, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}>
+              Précédent
+            </button>
+          )}
+          <button
+            onClick={() => (isLast ? onClose() : setStep((s) => s + 1))}
+            style={{ flex: 1, padding: "0.65rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600, fontSize: "0.85rem" }}
+          >
+            {isLast ? "C'est parti !" : "Suivant"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InstallGuide({ onClose }) {
   const [step, setStep] = useState(0);
   const steps = [
@@ -194,6 +273,7 @@ function AuthScreen({ onAuthenticated }) {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+      if (mode === "signup") localStorage.setItem("mufradat_show_onboarding", "1");
       onAuthenticated(data.token, data.user);
     } catch (err) {
       setError(err.message);
@@ -476,6 +556,14 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
   const [adminReports, setAdminReports] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const isAdmin = user.email?.toLowerCase() === "sophiane.m2002@outlook.fr";
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("mufradat_show_onboarding") === "1") {
+      setShowOnboarding(true);
+      localStorage.removeItem("mufradat_show_onboarding");
+    }
+  }, []);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -1182,6 +1270,8 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
           </div>
         </div>
       )}
+
+      {showOnboarding && <WelcomeOnboarding onClose={() => setShowOnboarding(false)} />}
     </div>
   );
 }
