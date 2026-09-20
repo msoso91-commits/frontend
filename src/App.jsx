@@ -1006,7 +1006,7 @@ function MainApp({ token, user, onLogout }) {
       >
         {[
           { key: "home", Icon: HomeIcon, label: "Accueil" },
-          { key: "history", Icon: BookIcon, label: "Mes pages" },
+          { key: "history", Icon: BookIcon, label: "Pages" },
           { key: "profile", Icon: ProfileIcon, label: "Profil" },
         ].map((tab) => {
           const active = view === tab.key || (tab.key === "history" && view === "page");
