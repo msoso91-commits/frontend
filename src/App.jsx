@@ -1112,23 +1112,22 @@ function SplashScreen({ leaving, overlay }) {
           60% { transform: scale(1.1); opacity: 1; }
           100% { transform: scale(1); opacity: 1; }
         }
-        @keyframes splashDraw {
-          from { stroke-dashoffset: 210; }
-          to { stroke-dashoffset: 0; }
+        @keyframes splashSpin {
+          to { transform: rotate(360deg); }
         }
         @keyframes splashGlow {
           0%, 100% { filter: drop-shadow(0 0 0px ${COLORS.gold}); }
           50% { filter: drop-shadow(0 0 6px ${COLORS.gold}); }
         }
         .splash-logo { animation: splashIntro 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both, splashGlow 1.6s ease-in-out 0.7s infinite; }
-        .splash-ring { animation: splashDraw 1s ease-out both; transform: rotate(-90deg); transform-origin: 36px 36px; }
+        .splash-ring { animation: splashSpin 1s linear infinite; transform-origin: 36px 36px; }
         .splash-word { animation: splashIntro 0.6s ease 0.35s both; }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
         <div style={{ position: "relative", width: 72, height: 72 }}>
           <svg className="splash-ring" width="72" height="72" viewBox="0 0 72 72" style={{ position: "absolute", top: 0, left: 0 }}>
             <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.paperDark} strokeWidth="2" />
-            <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.teal} strokeWidth="2.5" strokeDasharray="210" strokeLinecap="round" />
+            <circle cx="36" cy="36" r="33" fill="none" stroke={COLORS.teal} strokeWidth="2.5" strokeDasharray="55 165" strokeLinecap="round" />
           </svg>
           <img src="/logo.svg" alt="" width={56} height={56} className="splash-logo" style={{ position: "absolute", top: 8, left: 8 }} />
         </div>
