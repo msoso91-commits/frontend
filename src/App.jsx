@@ -116,6 +116,15 @@ function ProfileIcon({ color }) {
   );
 }
 
+function QuizIcon({ color }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="8.5" stroke={color} strokeWidth="1.8" />
+      <path d="M9.3 12.2l1.9 1.9 3.5-4.2" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function CameraIcon({ color }) {
   return (
     <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -1277,10 +1286,54 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
         </div>
       )}
 
+      {view === "revisions" && (
+        <div>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: "1.9rem", fontWeight: 700, color: COLORS.ink, marginBottom: "0.5rem" }}>
+            Révisions
+          </h1>
+          <p style={{ color: COLORS.muted, fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+            Choisis une page pour réviser ses mots sous forme de quiz.
+          </p>
+          {pages.length === 0 && (
+            <p style={{ color: COLORS.muted, fontSize: "0.9rem" }}>Analyse une page pour pouvoir la réviser ici.</p>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+            {pages
+              .filter((p) => (p.verbes?.length || 0) + (p.noms?.length || 0) > 0)
+              .map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => startQuiz(p)}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    borderRadius: 8,
+                    padding: "0.9rem 1.1rem",
+                    background: "rgba(255,255,255,0.04)",
+                    border: `1px solid ${COLORS.paperDark}`,
+                    textAlign: "left",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 600, color: COLORS.ink }}>
+                      {p.titre || `${p.verbes?.length || 0} verbe${p.verbes?.length !== 1 ? "s" : ""} · ${p.noms?.length || 0} nom${p.noms?.length !== 1 ? "s" : ""}`}
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: COLORS.muted, marginTop: 2 }}>
+                      {(p.verbes?.length || 0) + (p.noms?.length || 0)} mot{(p.verbes?.length || 0) + (p.noms?.length || 0) !== 1 ? "s" : ""} à réviser
+                    </div>
+                  </div>
+                  <span style={{ color: COLORS.teal, fontSize: "0.8rem", fontWeight: 600 }}>🧠 Réviser</span>
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
       {view === "quiz" && quizQuestions.length > 0 && (
         <div>
           <button
-            onClick={() => setView("page")}
+            onClick={() => setView("revisions")}
             style={{ background: "none", color: COLORS.gold, fontSize: "0.85rem", marginBottom: "1rem" }}
           >
             ← Quitter la révision
@@ -1354,10 +1407,10 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
               Recommencer
             </button>
             <button
-              onClick={() => setView("page")}
+              onClick={() => setView("revisions")}
               style={{ padding: "0.7rem 1.2rem", borderRadius: 8, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
             >
-              Retour à la page
+              Retour aux révisions
             </button>
           </div>
         </div>
@@ -1551,7 +1604,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
           borderRadius: 18,
           boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
           display: "flex",
-          gap: "1.25rem",
+          gap: "0.9rem",
           padding: "0.6rem 1.5rem",
           zIndex: 30,
         }}
@@ -1559,9 +1612,13 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
         {[
           { key: "home", Icon: HomeIcon, label: "Accueil" },
           { key: "history", Icon: BookIcon, label: "Pages" },
+          { key: "revisions", Icon: QuizIcon, label: "Révisions" },
           { key: "profile", Icon: ProfileIcon, label: "Profil" },
         ].map((tab) => {
-          const active = view === tab.key || (tab.key === "history" && ["page", "quiz", "quizResult"].includes(view));
+          const active =
+            view === tab.key ||
+            (tab.key === "history" && view === "page") ||
+            (tab.key === "revisions" && ["quiz", "quizResult"].includes(view));
           return (
             <button
               key={tab.key}
