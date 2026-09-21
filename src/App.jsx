@@ -442,7 +442,8 @@ function AuthScreen({ onAuthenticated }) {
 
   if (mode === "reset") {
     return (
-      <div style={{ maxWidth: 380, margin: "10vh auto", padding: "0 1rem" }}>
+      <div style={{ position: "fixed", inset: 0, overflowY: "auto", background: COLORS.paper, display: "flex", justifyContent: "center", padding: "10vh 1rem 2rem" }}>
+      <div style={{ maxWidth: 380, width: "100%" }}>
         <img src="/logo.svg" alt="" width={56} height={56} style={{ display: "block", margin: "0 auto" }} />
         <h1 style={{ fontFamily: "Fraunces, serif", textAlign: "center", fontSize: "1.4rem", marginTop: "1rem" }}>
           Nouveau mot de passe
@@ -467,12 +468,14 @@ function AuthScreen({ onAuthenticated }) {
           </button>
         </form>
       </div>
+      </div>
     );
   }
 
   if (mode === "forgot") {
     return (
-      <div style={{ maxWidth: 380, margin: "10vh auto", padding: "0 1rem" }}>
+      <div style={{ position: "fixed", inset: 0, overflowY: "auto", background: COLORS.paper, display: "flex", justifyContent: "center", padding: "10vh 1rem 2rem" }}>
+      <div style={{ maxWidth: 380, width: "100%" }}>
         <img src="/logo.svg" alt="" width={56} height={56} style={{ display: "block", margin: "0 auto" }} />
         <h1 style={{ fontFamily: "Fraunces, serif", textAlign: "center", fontSize: "1.4rem", marginTop: "1rem" }}>
           Mot de passe oublié
@@ -510,11 +513,13 @@ function AuthScreen({ onAuthenticated }) {
           ← Retour à la connexion
         </button>
       </div>
+      </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 380, margin: "10vh auto", padding: "0 1rem" }}>
+    <div style={{ position: "fixed", inset: 0, overflowY: "auto", background: COLORS.paper, display: "flex", justifyContent: "center", padding: "10vh 1rem 2rem" }}>
+    <div style={{ maxWidth: 380, width: "100%" }}>
       <img src="/logo.svg" alt="" width={56} height={56} style={{ display: "block", margin: "0 auto" }} />
       <div style={{ fontFamily: "Amiri, serif", fontSize: "2.2rem", color: COLORS.teal, textAlign: "center", marginTop: "0.5rem" }} dir="rtl">
         مُفْرَدَات
@@ -589,6 +594,7 @@ function AuthScreen({ onAuthenticated }) {
         <a href="/contact.html" style={{ color: COLORS.muted }}>Contact</a>
       </footer>
       {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
+    </div>
     </div>
   );
 }
@@ -683,6 +689,12 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
   const [pendingDelete, setPendingDelete] = useState(null);
   const pendingDeleteRef = useRef(null);
   const [pagesSearch, setPagesSearch] = useState("");
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizSelected, setQuizSelected] = useState(null);
+  const [quizAnswered, setQuizAnswered] = useState(false);
+  const [quizLoading, setQuizLoading] = useState(false);
   const toastTimeoutRef = useRef(null);
 
   function showToast(message) {
@@ -920,6 +932,63 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
       method: "POST",
       body: JSON.stringify({ wordType, row }),
     }).catch(() => {});
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function startQuiz(page) {
+    const all = [
+      ...(page.verbes || []).map((w) => ({ ...w, wordType: "verbe" })),
+      ...(page.noms || []).map((w) => ({ ...w, wordType: "nom" })),
+    ].filter((w) => w.traduction);
+
+    const allTranslations = all.map((w) => w.traduction);
+
+    const questions = shuffle(all).map((w) => {
+      const distractors = shuffle(allTranslations.filter((t) => t !== w.traduction)).slice(0, 3);
+      const options = shuffle([w.traduction, ...distractors]);
+      return { wordType: w.wordType, mot: w.mot, correctAnswer: w.traduction, options };
+    });
+
+    setQuizQuestions(questions);
+    setQuizIndex(0);
+    setQuizScore(0);
+    setQuizSelected(null);
+    setQuizAnswered(false);
+    setViewingPage(page);
+    setView("quiz");
+  }
+
+  function answerQuiz(option) {
+    if (quizAnswered) return;
+    const q = quizQuestions[quizIndex];
+    const correct = option === q.correctAnswer;
+    setQuizSelected(option);
+    setQuizAnswered(true);
+    if (correct) setQuizScore((s) => s + 1);
+
+    apiFetch(`/api/pages/${viewingPage.id}/review`, {
+      token,
+      method: "POST",
+      body: JSON.stringify({ wordType: q.wordType, mot: q.mot, status: correct ? "maitrise" : "a_revoir" }),
+    }).catch(() => {});
+  }
+
+  function nextQuizQuestion() {
+    if (quizIndex + 1 < quizQuestions.length) {
+      setQuizIndex((i) => i + 1);
+      setQuizSelected(null);
+      setQuizAnswered(false);
+    } else {
+      setView("quizResult");
+    }
   }
 
   async function deleteAccount() {
@@ -1160,6 +1229,14 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
           {viewingPage?.titre && (
             <h2 style={{ fontFamily: "Fraunces, serif", fontSize: "1.3rem", marginBottom: "1rem" }}>{viewingPage.titre}</h2>
           )}
+          {viewingPage && (viewingPage.verbes?.length > 0 || viewingPage.noms?.length > 0) && (
+            <button
+              onClick={() => startQuiz(viewingPage)}
+              style={{ padding: "0.65rem 1.1rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600, fontSize: "0.85rem", marginBottom: "1.5rem" }}
+            >
+              🧠 Réviser les mots de cette page
+            </button>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
             {viewingPage?.verbes?.length > 0 && (
               <section>
@@ -1197,6 +1274,92 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
           <p style={{ marginTop: "2rem", fontSize: "0.75rem", color: COLORS.muted, textAlign: "center" }}>
             Les formes marquées « — » ou « ? » signalent une incertitude plutôt qu'une réponse inventée.
           </p>
+        </div>
+      )}
+
+      {view === "quiz" && quizQuestions.length > 0 && (
+        <div>
+          <button
+            onClick={() => setView("page")}
+            style={{ background: "none", color: COLORS.gold, fontSize: "0.85rem", marginBottom: "1rem" }}
+          >
+            ← Quitter la révision
+          </button>
+          <p style={{ fontSize: "0.8rem", color: COLORS.muted, marginBottom: "0.5rem" }}>
+            Question {quizIndex + 1} / {quizQuestions.length}
+          </p>
+          <div style={{ height: 4, borderRadius: 2, background: COLORS.paperDark, marginBottom: "1.5rem", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${((quizIndex + 1) / quizQuestions.length) * 100}%`, background: COLORS.teal, transition: "width 0.3s" }} />
+          </div>
+
+          <div style={{ borderRadius: 8, padding: "1.5rem", background: "rgba(255,255,255,0.04)", border: `1px solid ${COLORS.gold}`, textAlign: "center", marginBottom: "1.5rem" }}>
+            <p style={{ fontSize: "0.8rem", color: COLORS.muted, marginBottom: "0.5rem" }}>Quelle est la traduction de ce mot ?</p>
+            <div style={{ fontFamily: "Amiri, serif", fontSize: "2.2rem", color: COLORS.ink }} dir="rtl">
+              {quizQuestions[quizIndex].mot}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+            {quizQuestions[quizIndex].options.map((opt, i) => {
+              const isCorrect = opt === quizQuestions[quizIndex].correctAnswer;
+              const isSelected = opt === quizSelected;
+              let bg = COLORS.paperDark;
+              let border = COLORS.paperDark;
+              if (quizAnswered && isCorrect) { bg = "rgba(63,169,140,0.15)"; border = COLORS.teal; }
+              else if (quizAnswered && isSelected && !isCorrect) { bg = "rgba(226,114,91,0.15)"; border = COLORS.danger; }
+              return (
+                <button
+                  key={i}
+                  onClick={() => answerQuiz(opt)}
+                  disabled={quizAnswered}
+                  style={{ padding: "0.85rem 1rem", borderRadius: 8, background: bg, border: `1px solid ${border}`, color: COLORS.ink, fontSize: "0.95rem", textAlign: "left" }}
+                >
+                  {opt}
+                  {quizAnswered && isCorrect && "  ✓"}
+                  {quizAnswered && isSelected && !isCorrect && "  ✗"}
+                </button>
+              );
+            })}
+          </div>
+
+          {quizAnswered && (
+            <button
+              onClick={nextQuizQuestion}
+              style={{ marginTop: "1.5rem", width: "100%", padding: "0.85rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600 }}
+            >
+              {quizIndex + 1 < quizQuestions.length ? "Question suivante" : "Voir le résultat"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {view === "quizResult" && (
+        <div style={{ textAlign: "center", paddingTop: "2rem" }}>
+          <div style={{ fontFamily: "Fraunces, serif", fontSize: "1.6rem", color: COLORS.ink, marginBottom: "0.5rem" }}>
+            Révision terminée !
+          </div>
+          <div style={{ fontFamily: "Fraunces, serif", fontSize: "3rem", color: COLORS.teal, margin: "1rem 0" }}>
+            {quizScore} / {quizQuestions.length}
+          </div>
+          <p style={{ color: COLORS.muted, fontSize: "0.9rem", marginBottom: "2rem" }}>
+            {quizScore === quizQuestions.length
+              ? "Score parfait, bravo ! 🎉"
+              : "Les mots ratés sont marqués « à revoir » pour la prochaine fois."}
+          </p>
+          <div style={{ display: "flex", gap: "0.6rem", justifyContent: "center" }}>
+            <button
+              onClick={() => startQuiz(viewingPage)}
+              style={{ padding: "0.7rem 1.2rem", borderRadius: 8, background: COLORS.teal, color: COLORS.paper, fontWeight: 600, fontSize: "0.85rem" }}
+            >
+              Recommencer
+            </button>
+            <button
+              onClick={() => setView("page")}
+              style={{ padding: "0.7rem 1.2rem", borderRadius: 8, background: COLORS.paperDark, color: COLORS.ink, fontSize: "0.85rem" }}
+            >
+              Retour à la page
+            </button>
+          </div>
         </div>
       )}
 
@@ -1398,7 +1561,7 @@ function MainApp({ token, user, onLogout, onPullRefresh }) {
           { key: "history", Icon: BookIcon, label: "Pages" },
           { key: "profile", Icon: ProfileIcon, label: "Profil" },
         ].map((tab) => {
-          const active = view === tab.key || (tab.key === "history" && view === "page");
+          const active = view === tab.key || (tab.key === "history" && ["page", "quiz", "quizResult"].includes(view));
           return (
             <button
               key={tab.key}
